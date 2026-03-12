@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -46,6 +48,8 @@ export class AuthService {
       firstName,
       lastName,
       phone,
+      authProvider: 'EMAIL',
+      role: 'USER',
     });
 
     const savedUser = await this.usersRepository.save(user);
@@ -92,6 +96,61 @@ export class AuthService {
     // Update last login
     user.lastLogin = new Date();
     await this.usersRepository.save(user);
+
+    // Generate tokens
+    const tokens = this.generateTokens(user);
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isActive: user.isActive,
+      },
+    };
+  }
+
+  async googleLogin(googleLoginDto: GoogleLoginDto): Promise<AuthResponseDto> {
+    const { email, firstName, lastName, avatar, idToken, role } = googleLoginDto;
+
+    // Verify Google ID token (in production, verify with Google API)
+    if (!idToken) {
+      throw new BadRequestException('Invalid Google ID token');
+    }
+
+    // Check if user exists
+    let user = await this.usersRepository.findOne({
+      where: { email },
+    });
+
+    if (user) {
+      // User exists, update Google ID if not set
+      if (!user.googleId) {
+        user.googleId = idToken;
+        user.authProvider = 'GOOGLE';
+      }
+      
+      // Update last login
+      user.lastLogin = new Date();
+      user = await this.usersRepository.save(user);
+    } else {
+      // Create new user
+      user = this.usersRepository.create({
+        email,
+        firstName,
+        lastName,
+        avatar,
+        googleId: idToken,
+        authProvider: 'GOOGLE',
+        role: role || 'USER',
+        emailVerified: true, // Google users are already verified
+      });
+
+      user = await this.usersRepository.save(user);
+    }
 
     // Generate tokens
     const tokens = this.generateTokens(user);

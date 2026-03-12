@@ -8,6 +8,7 @@ Write-Host ""
 $services = @(
     "auth",
     "monolith",
+    "business",
     "orchestrator",
     "sales",
     "inventory",
@@ -23,6 +24,7 @@ $services = @(
 $colors = @{
     "auth" = "Cyan"
     "monolith" = "Magenta"
+    "business" = "DarkGreen"
     "orchestrator" = "Green"
     "sales" = "Yellow"
     "inventory" = "Green"
@@ -73,7 +75,8 @@ Write-Host ""
 Write-Host "URLs dos Servicos:" -ForegroundColor Cyan
 Write-Host "  * Orchestrator: http://localhost:3009" -ForegroundColor Green
 Write-Host "  * Auth Service: http://localhost:3000" -ForegroundColor Cyan
-Write-Host "  * Monolith: http://localhost:3000" -ForegroundColor Magenta
+Write-Host "  * Monolith: http://localhost:3010" -ForegroundColor Magenta
+Write-Host "  * Business: http://localhost:3011" -ForegroundColor DarkGreen
 Write-Host "  * Sales: http://localhost:3001" -ForegroundColor Yellow
 Write-Host "  * Inventory: http://localhost:3002" -ForegroundColor Green
 Write-Host "  * Delivery: http://localhost:3003" -ForegroundColor Blue
