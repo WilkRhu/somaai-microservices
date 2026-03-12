@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'somaai-monitor'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'sales-service'
+    static_configs:
+      - targets: ['sales:3001']
+    metrics_path: '/metrics'
+
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory:3002']
+    metrics_path: '/metrics'
+
+  - job_name: 'delivery-service'
+    static_configs:
+      - targets: ['delivery:3003']
+    metrics_path: '/metrics'
+
+  - job_name: 'suppliers-service'
+    static_configs:
+      - targets: ['suppliers:3004']
+    metrics_path: '/metrics'
+
+  - job_name: 'offers-service'
+    static_configs:
+      - targets: ['offers:3005']
+    metrics_path: '/metrics'
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql-exporter:9104']
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']

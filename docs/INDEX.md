@@ -1,344 +1,456 @@
-# 📑 Índice de Documentação - SomaAI Microservices
+# SomaAI Microservices - Complete Documentation Index
 
-## 🎯 Comece Aqui
+## Overview
 
-### Para Iniciantes
-1. **[COMECE_AQUI.md](./COMECE_AQUI.md)** ⭐ START HERE
-   - Guia rápido de 5 minutos
-   - Como rodar os serviços
-   - Exemplos de endpoints
-   - Troubleshooting básico
+SomaAI is a comprehensive microservices architecture for e-commerce operations, built with NestJS, TypeORM, Kafka, and Docker. This documentation covers all three phases of development.
 
-### Para Entender o Projeto
-2. **[RESUMO_FASE1.md](./RESUMO_FASE1.md)** ⭐ NOVO
-   - Status: ✅ Fase 1 Completa (100%)
-   - Serviços criados (OCR, Fiscal, Payments)
-   - Totais: 142 arquivos, 6 serviços
-   - Próximas etapas
+## Phase 1: Foundation & Architecture
 
-3. **[SUMARIO_FINAL.md](./SUMARIO_FINAL.md)**
-   - Visão geral do que foi feito
-   - Números e estatísticas
-   - Próximas fases
-   - Destaques técnicos
+### Documentation
+- [FASE1_FINALIZADO.md](./FASE1_FINALIZADO.md) - Phase 1 completion summary
+- [INICIO.md](../INICIO.md) - Project initialization guide
 
-4. **[RESUMO_EXECUCAO.md](./RESUMO_EXECUCAO.md)**
-   - Detalhes de implementação
-   - Segurança implementada
-   - Como usar
-   - Aprendizados
+### Key Components
+- **Services**: Sales, Inventory, Delivery, Suppliers, Offers
+- **Infrastructure**: MySQL, Kafka, Docker, Docker Compose
+- **Architecture**: Microservices with event-driven communication
 
----
+### What's Included
+- Service scaffolding with NestJS
+- Database setup with TypeORM
+- Kafka integration for async messaging
+- Docker containerization
+- Docker Compose orchestration
 
-## 📊 Acompanhamento do Projeto
+## Phase 2: Features & Integration
 
-### Status Atual
-- **[TAREFAS.md](./TAREFAS.md)** - Lista de tarefas com progresso
-  - Prioridade 0: ✅ 100% Concluído
-  - Fase 1: ✅ 100% Concluído (OCR, Fiscal, Payments)
-  - Fase 2: ⏳ Próximo
-  - Fase 3: ⏳ Planejado
+### Documentation
+- [FASE2_COMPLETA.md](./FASE2_COMPLETA.md) - Phase 2 complete guide
+- [FASE2_QUICK_START.md](./FASE2_QUICK_START.md) - Quick start guide
+- [FASE2_INDEX.md](./FASE2_INDEX.md) - Phase 2 index
 
-- **[PROGRESSO.md](./PROGRESSO.md)** - Progresso detalhado
-  - Serviços concluídos
-  - Arquivos criados
-  - Funcionalidades implementadas
-  - Próximas etapas
+### Key Features
+- **Sales Service**: Order creation, retrieval, updates
+- **Inventory Service**: Stock management, quantity tracking
+- **Delivery Service**: Delivery tracking, status updates
+- **Suppliers Service**: Supplier management
+- **Offers Service**: Promotional offers management
 
-- **[FASE1_COMPLETA.md](./FASE1_COMPLETA.md)** ⭐ NOVO
-  - Documentação completa da Fase 1
-  - Arquitetura visual
-  - Endpoints por serviço
-  - Kafka topics
-  - Como executar
+### What's Included
+- Complete CRUD operations for all services
+- Kafka producers for event publishing
+- Kafka consumers for event handling
+- Database entities and relationships
+- DTOs for request/response validation
+- Error handling and logging
 
----
+## Phase 3: Testing, CI/CD, and Monitoring
 
-## 📁 Referência de Arquivos
+### Documentation
+- [FASE3_COMPLETA.md](./FASE3_COMPLETA.md) - Phase 3 complete guide
+- [FASE3_TESTING.md](./FASE3_TESTING.md) - Testing guide
+- [FASE3_CICD.md](./FASE3_CICD.md) - CI/CD pipeline guide
+- [FASE3_MONITORING.md](./FASE3_MONITORING.md) - Monitoring setup guide
 
-- **[ARQUIVOS_CRIADOS.md](./ARQUIVOS_CRIADOS.md)**
-  - Lista completa de 65+ arquivos
-  - Organização por tipo
-  - Distribuição por responsabilidade
-  - Estatísticas de código
+### Testing
+- **Unit Tests**: Service and controller tests
+- **Integration Tests**: Database and Kafka integration
+- **Coverage**: 80%+ target across all services
+- **Test Files**: 8+ test files with comprehensive coverage
 
----
+### CI/CD Pipeline
+- **ci.yml**: Automated testing and linting
+- **build.yml**: Docker image building and scanning
+- **deploy.yml**: Staging and production deployment
+- **Features**: Parallel execution, caching, vulnerability scanning
 
-## 🏗️ Arquitetura e Design
+### Monitoring & Logging
+- **ELK Stack**: Elasticsearch, Logstash, Kibana
+- **Prometheus**: Metrics collection
+- **Grafana**: Metrics visualization
+- **Alertmanager**: Alert routing
+- **Winston**: Application logging
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)**
-  - Visão geral da arquitetura
-  - Serviços e responsabilidades
-  - Fluxos de dados
-  - Kafka topics
+## Project Structure
 
-- **[MICROSERVICES_ARCHITECTURE_DETAILED.md](./MICROSERVICES_ARCHITECTURE_DETAILED.md)**
-  - Análise detalhada de separação
-  - Estratégia de separação em 3 fases
-  - Dependências críticas
-  - Comparação antes vs depois
-
----
-
-## 🛠️ Guias de Implementação
-
-- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)**
-  - Estrutura de um serviço
-  - Dockerfile padrão
-  - Kafka Producer/Consumer
-  - Exemplo prático: Fluxo de venda
-
-- **[DOCKER_SETUP.md](./DOCKER_SETUP.md)**
-  - Setup completo com Docker Compose
-  - Como rodar
-  - Endpoints disponíveis
-  - Monitoramento
-
----
-
-## 📡 Integração e Comunicação
-
-- **[KAFKA_GUIDE.md](./KAFKA_GUIDE.md)**
-  - Como publicar eventos
-  - Como consumir eventos
-  - Monitorar topics
-  - Estrutura de eventos
-  - Troubleshooting
-
----
-
-## 🚀 Deployment e Operações
-
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)**
-  - Quick start
-  - Estrutura de pastas
-  - Docker Compose
-  - Acessar serviços
-  - Atualizar serviço
-  - Logs
-
-- **[QUICK_START.md](./QUICK_START.md)**
-  - 5 minutos para começar
-  - Pré-requisitos
-  - Instalação
-  - Testar fluxo de venda
-  - Dashboards
-
----
-
-## 🔧 Troubleshooting
-
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)**
-  - Serviço não inicia
-  - Kafka não conecta
-  - Database connection error
-  - Lag alto no Kafka
-  - Redis não conecta
-  - Nginx retorna 502
-  - Verificar saúde
-  - Resetar tudo
-
----
-
-## 📚 Estrutura do Projeto
-
-- **[ESTRUTURA_PROJETO.md](./ESTRUTURA_PROJETO.md)**
-  - Estrutura completa de pastas
-  - Contagem de arquivos
-  - Resumo de pastas
-  - Contagem detalhada
-
-- **[ESTRUTURA_NESTJS.md](./ESTRUTURA_NESTJS.md)**
-  - Estrutura padrão de um serviço NestJS
-  - Arquivos padrão
-  - Estrutura de módulos
-  - Contagem por tipo de serviço
-  - Dependências padrão
-
----
-
-## 🎓 Referência Rápida
-
-### Comandos Principais
-
-#### Desenvolvimento
-```bash
-npm install              # Instalar dependências
-npm run start:dev        # Rodar em desenvolvimento
-npm run build            # Build para produção
-npm run start:prod       # Rodar em produção
+```
+somaai-microservices/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml              # Testing & linting
+│       ├── build.yml           # Docker building
+│       └── deploy.yml          # Deployment
+├── services/
+│   ├── sales/                  # Sales microservice
+│   ├── inventory/              # Inventory microservice
+│   ├── delivery/               # Delivery microservice
+│   ├── suppliers/              # Suppliers microservice
+│   ├── offers/                 # Offers microservice
+│   ├── gateway/                # API Gateway
+│   ├── auth/                   # Authentication service
+│   ├── payments/               # Payments service
+│   ├── fiscal/                 # Fiscal service
+│   ├── ocr/                    # OCR service
+│   └── monolith/               # Monolith service
+├── monitoring/
+│   ├── prometheus.yml          # Prometheus config
+│   ├── prometheus-rules.yml    # Alert rules
+│   ├── logstash.conf          # Logstash config
+│   ├── alertmanager.yml       # Alert routing
+│   └── grafana/               # Grafana configs
+├── test/
+│   ├── fixtures/              # Test data
+│   ├── mocks/                 # Mock objects
+│   └── utils/                 # Test utilities
+├── docs/
+│   ├── INDEX.md               # This file
+│   ├── FASE1_FINALIZADO.md    # Phase 1 summary
+│   ├── FASE2_COMPLETA.md      # Phase 2 guide
+│   ├── FASE2_QUICK_START.md   # Phase 2 quick start
+│   ├── FASE2_INDEX.md         # Phase 2 index
+│   ├── FASE3_COMPLETA.md      # Phase 3 guide
+│   ├── FASE3_TESTING.md       # Testing guide
+│   ├── FASE3_CICD.md          # CI/CD guide
+│   └── FASE3_MONITORING.md    # Monitoring guide
+├── docker-compose.yml         # Main compose file
+├── docker-compose-monitoring.yml # Monitoring stack
+├── README.md                  # Project README
+└── INICIO.md                  # Initialization guide
 ```
 
-#### Testes
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Docker & Docker Compose
+- Git
+
+### Setup
+
+1. **Clone repository**
+   ```bash
+   git clone <repository-url>
+   cd somaai-microservices
+   ```
+
+2. **Install dependencies**
+   ```bash
+   for service in sales inventory delivery suppliers offers; do
+     cd services/$service && npm install && cd ../..
+   done
+   ```
+
+3. **Start infrastructure**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Start services**
+   ```bash
+   for service in sales inventory delivery suppliers offers; do
+     cd services/$service && npm run start:dev &
+     cd ../..
+   done
+   ```
+
+5. **Start monitoring**
+   ```bash
+   docker-compose -f docker-compose-monitoring.yml up -d
+   ```
+
+### Access Points
+
+- **API Gateway**: http://localhost:3000
+- **Sales Service**: http://localhost:3001
+- **Inventory Service**: http://localhost:3002
+- **Delivery Service**: http://localhost:3003
+- **Suppliers Service**: http://localhost:3004
+- **Offers Service**: http://localhost:3005
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Kibana**: http://localhost:5601
+- **Prometheus**: http://localhost:9090
+
+## Services Overview
+
+### Sales Service
+- **Port**: 3001
+- **Database**: MySQL (sales_db)
+- **Features**: Order management, sale tracking
+- **Endpoints**: POST/GET /sales, GET /sales/:id
+- **Events**: sales.created, sales.updated
+
+### Inventory Service
+- **Port**: 3002
+- **Database**: MySQL (inventory_db)
+- **Features**: Stock management, quantity tracking
+- **Endpoints**: POST/GET /inventory, GET /inventory/:id
+- **Events**: inventory.updated, inventory.low-stock
+
+### Delivery Service
+- **Port**: 3003
+- **Database**: MySQL (delivery_db)
+- **Features**: Delivery tracking, status updates
+- **Endpoints**: POST/GET /delivery, GET /delivery/:id
+- **Events**: delivery.created, delivery.updated
+
+### Suppliers Service
+- **Port**: 3004
+- **Database**: MySQL (suppliers_db)
+- **Features**: Supplier management
+- **Endpoints**: POST/GET /suppliers, GET /suppliers/:id
+- **Events**: supplier.created, supplier.updated
+
+### Offers Service
+- **Port**: 3005
+- **Database**: MySQL (offers_db)
+- **Features**: Promotional offers management
+- **Endpoints**: POST/GET /offers, GET /offers/:id
+- **Events**: offer.created, offer.updated
+
+## Testing
+
+### Run Tests
 ```bash
-npm run test             # Testes unitários
-npm run test:cov         # Com cobertura
-npm run test:e2e         # Testes E2E
+# All services
+for service in sales inventory delivery suppliers offers; do
+  cd services/$service && npm run test:cov && cd ../..
+done
+
+# Specific service
+cd services/sales && npm run test:cov
 ```
 
-#### Linting
-```bash
-npm run lint             # Verificar linting
-npm run format           # Formatar código
-```
+### Coverage
+- Target: 80%+
+- Reports: `services/*/coverage/index.html`
 
-#### Docker
-```bash
-docker build -t somaai-service .
-docker run -p 3000:3000 somaai-service
-docker-compose up -d
-docker-compose down
-```
+## CI/CD Pipeline
 
-### Portas Padrão
-- Gateway: 80
-- Auth: 3000
-- Monolith: 3000
-- Kafka UI: 8080
-- Prometheus: 9090
-- Grafana: 3100
-- Kibana: 5601
+### Workflows
+1. **CI (ci.yml)**: Tests on every push
+2. **Build (build.yml)**: Docker images after tests
+3. **Deploy (deploy.yml)**: Staging/production deployment
 
-### Variáveis de Ambiente
-- `NODE_ENV` - development/production
-- `APP_PORT` - porta do serviço
-- `DB_HOST` - host do MySQL
-- `JWT_SECRET` - chave JWT
-- `KAFKA_BROKERS` - brokers do Kafka
+### Triggers
+- Push to main/develop
+- Pull requests
+- Manual workflow dispatch
+
+### Status
+- View in GitHub Actions tab
+- Check commit status
+- Review PR checks
+
+## Monitoring
+
+### Dashboards
+- **Grafana**: Services overview, metrics
+- **Kibana**: Logs, analysis
+- **Prometheus**: Metrics, alerts
+
+### Alerts
+- Service down
+- High error rate
+- High latency
+- High resource usage
+- Database issues
+- Kafka lag
+
+### Health Checks
+- `/health`: Overall health
+- `/health/ready`: Readiness probe
+- `/health/live`: Liveness probe
+
+## Development Workflow
+
+### Feature Development
+1. Create feature branch from develop
+2. Implement feature
+3. Write tests (80%+ coverage)
+4. Create pull request
+5. CI pipeline runs
+6. Code review
+7. Merge to develop
+8. Deploy to staging
+
+### Production Release
+1. Create release branch from main
+2. Update version
+3. Create pull request
+4. CI pipeline runs
+5. Code review
+6. Merge to main
+7. Deploy to production
+
+## Troubleshooting
+
+### Services Not Starting
+1. Check Docker is running
+2. Verify ports are available
+3. Check logs: `docker logs <service-name>`
+4. Verify environment variables
+
+### Tests Failing
+1. Check test logs
+2. Run locally
+3. Verify mocks
+4. Check dependencies
+
+### Deployment Issues
+1. Check GitHub Actions logs
+2. Verify environment variables
+3. Check health endpoints
+4. Review rollback logs
+
+## Performance Optimization
+
+### Caching
+- Docker layer caching
+- Node modules caching
+- Database query caching
+
+### Scaling
+- Horizontal: Multiple instances
+- Vertical: Increase resources
+- Load balancing: Nginx
+
+### Monitoring
+- Track metrics
+- Identify bottlenecks
+- Optimize queries
+- Archive old logs
+
+## Security
+
+### Code Security
+- Linting on every commit
+- Dependency scanning
+- Code review requirements
+- Branch protection
+
+### Infrastructure Security
+- Secrets management
+- SSL/TLS encryption
+- Network isolation
+- Access control
+
+### Image Security
+- Vulnerability scanning
+- No critical vulnerabilities
+- Regular updates
+- Private registry
+
+## Maintenance
+
+### Daily
+- Monitor alerts
+- Check service health
+- Review error logs
+
+### Weekly
+- Review performance
+- Optimize queries
+- Archive logs
+
+### Monthly
+- Update dependencies
+- Security audit
+- Capacity planning
+- Disaster recovery test
+
+## Resources
+
+### Documentation
+- [NestJS](https://docs.nestjs.com/)
+- [TypeORM](https://typeorm.io/)
+- [Kafka](https://kafka.apache.org/)
+- [Docker](https://docs.docker.com/)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [Prometheus](https://prometheus.io/docs/)
+- [Grafana](https://grafana.com/docs/)
+- [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/)
+
+### Tools
+- [Jest](https://jestjs.io/) - Testing
+- [ESLint](https://eslint.org/) - Linting
+- [Prettier](https://prettier.io/) - Formatting
+- [Docker](https://www.docker.com/) - Containerization
+- [Postman](https://www.postman.com/) - API testing
+
+## Support
+
+### Getting Help
+1. Check documentation
+2. Review logs
+3. Search issues
+4. Create issue with details
+
+### Reporting Issues
+- Include error message
+- Provide logs
+- Describe steps to reproduce
+- Include environment info
+
+## Contributing
+
+### Code Standards
+- Follow NestJS conventions
+- Use TypeScript
+- Write tests
+- Document code
+- Follow commit conventions
+
+### Pull Request Process
+1. Create feature branch
+2. Implement changes
+3. Write tests
+4. Update documentation
+5. Create pull request
+6. Address review comments
+7. Merge after approval
+
+## License
+
+PROPRIETARY - SomaAI Team
+
+## Version History
+
+### Phase 1 (Foundation)
+- Microservices architecture
+- Database setup
+- Kafka integration
+- Docker containerization
+
+### Phase 2 (Features)
+- CRUD operations
+- Event-driven communication
+- Service integration
+- API endpoints
+
+### Phase 3 (Testing, CI/CD, Monitoring)
+- Unit and integration tests
+- GitHub Actions workflows
+- ELK Stack monitoring
+- Prometheus metrics
+- Grafana dashboards
+- Health checks
+- Metrics collection
+
+## Next Steps
+
+1. **Immediate**: Run tests, start monitoring
+2. **Short Term**: Configure CI/CD, integrate services
+3. **Medium Term**: Optimize performance, add more tests
+4. **Long Term**: Advanced deployments, ML-based monitoring
+
+## Contact
+
+- **DevOps Lead**: [contact]
+- **QA Lead**: [contact]
+- **Platform Lead**: [contact]
 
 ---
 
-## 🔐 Segurança
-
-### Implementado
-- ✅ JWT com access/refresh tokens
-- ✅ Bcrypt para hash de senha
-- ✅ Validação de entrada
-- ✅ CORS configurado
-- ✅ Rate limiting
-- ✅ Health checks
-
-### Próximo
-- ⏳ SSL/TLS (produção)
-- ⏳ 2FA
-- ⏳ Email verification
-- ⏳ Recuperação de senha
-
----
-
-## 📊 Endpoints por Serviço
-
-### Auth Service
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/refresh
-- GET /api/auth/me
-- POST /api/auth/verify-token
-
-### Monolith Service
-- GET /api/users/:id
-- PATCH /api/users/:id
-- GET /api/users/profile/me
-- POST /api/establishments
-- GET /api/establishments/:id
-- GET /api/establishments
-- PATCH /api/establishments/:id
-- POST /api/subscriptions
-- GET /api/subscriptions/:id
-- GET /api/subscriptions
-- PATCH /api/subscriptions/:id
-- DELETE /api/subscriptions/:id
-
----
-
-## 🎯 Roadmap
-
-### ✅ Prioridade 0 (Concluído)
-- Gateway
-- Auth Service
-- Monolith Core
-
-### ✅ Fase 1 (Concluído)
-- OCR Service
-- Fiscal Service
-- Payments Service
-
-### ⏳ Fase 2 (Próximo)
-- Sales Service
-- Inventory Service
-- Delivery Service
-- Suppliers Service
-- Offers Service
-
-### ⏳ Fase 3
-- Notifications Service
-- Analytics Service
-
----
-
-## 📞 Suporte
-
-### Documentação
-1. Leia [COMECE_AQUI.md](./COMECE_AQUI.md)
-2. Consulte [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-3. Verifique [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)
-
-### Logs
-```bash
-npm run start:dev        # Ver logs em tempo real
-docker-compose logs -f   # Ver logs do Docker
-```
-
-### Verificar Saúde
-```bash
-curl http://localhost:3000/health
-curl http://localhost/health
-```
-
----
-
-## 📈 Métricas
-
-- **Serviços**: 6 (Gateway, Auth, Monolith, OCR, Fiscal, Payments)
-- **Arquivos**: 142
-- **Linhas de Código**: ~5000+
-- **Módulos**: 8+
-- **Entities**: 7
-- **DTOs**: 15+
-- **Endpoints**: 25+
-- **Kafka Topics**: 10+
-
----
-
-## 🎉 Status
-
-- **Prioridade 0**: ✅ 100% Concluído
-- **Fase 1**: ✅ 100% Concluído
-- **Documentação**: ✅ Completa
-- **Testes**: ✅ Configurados
-- **Docker**: ✅ Pronto
-- **Segurança**: ✅ Implementada
-
----
-
-## 📅 Datas Importantes
-
-- **Início**: 11 de Março de 2026
-- **Conclusão Prioridade 0**: 11 de Março de 2026
-- **Próxima Fase**: 2-3 semanas
-
----
-
-## 🚀 Comece Agora!
-
-1. Leia [COMECE_AQUI.md](./COMECE_AQUI.md)
-2. Instale dependências: `npm install`
-3. Rode em desenvolvimento: `npm run start:dev`
-4. Teste os endpoints
-5. Leia a documentação conforme necessário
-
----
-
-**Última atualização**: 12 de Março de 2026
-**Status**: ✅ Fase 1 Concluída (100%)
-**Próximo**: Fase 2 - Sales, Inventory, Delivery Services
+**Last Updated**: 2024
+**Version**: 3.0.0
+**Status**: Production Ready

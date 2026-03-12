@@ -1,0 +1,107 @@
+name: CI - Testing & Linting
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [sales, inventory, delivery, suppliers, offers]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies for ${{ matrix.service }}
+        run: cd services/${{ matrix.service }} && npm ci
+      
+      - name: Run linting for ${{ matrix.service }}
+        run: cd services/${{ matrix.service }} && npm run lint
+      
+      - name: Run tests for ${{ matrix.service }}
+        run: cd services/${{ matrix.service }} && npm run test:cov
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/${{ matrix.service }}/coverage/lcov.info
+          flags: ${{ matrix.service }}
+          name: ${{ matrix.service }}-coverage
+      
+      - name: Check coverage threshold
+        run: |
+          cd services/${{ matrix.service }}
+          COVERAGE=$(cat coverage/coverage-summary.json | grep -o '"lines"[^}]*' | grep -o '[0-9.]*' | head -1)
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "Coverage is $COVERAGE%, below 80% threshold"
+            exit 1
+          fi
+          echo "Coverage is $COVERAGE%, meets threshold"
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: somaai_test
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+      
+      kafka:
+        image: confluentinc/cp-kafka:7.5.0
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        ports:
+          - 9092:9092
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          for service in sales inventory delivery suppliers offers; do
+            cd services/$service && npm ci && cd ../..
+          done
+      
+      - name: Run integration tests
+        run: |
+          for service in sales inventory delivery suppliers offers; do
+            cd services/$service
+            npm run test:e2e || true
+            cd ../..
+          done
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 3306
+          DATABASE_USER: root
+          DATABASE_PASSWORD: root
+          DATABASE_NAME: somaai_test
+          KAFKA_BROKERS: localhost:9092

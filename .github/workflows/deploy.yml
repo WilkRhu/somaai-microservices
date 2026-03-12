@@ -1,0 +1,115 @@
+name: Deploy - Staging & Production
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_run:
+    workflows: ['Build - Docker Images']
+    types: [completed]
+    branches: [main, develop]
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event.workflow_run.conclusion == 'success')
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your staging deployment commands here
+          # Example: kubectl apply -f k8s/staging/
+      
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on staging..."
+          # Add your smoke test commands here
+      
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: 'Staging deployment ${{ job.status }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event.workflow_run.conclusion == 'success')
+    environment:
+      name: production
+      url: https://api.somaai.com
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Create deployment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              required_contexts: [],
+              auto_merge: false,
+            });
+            console.log('Deployment created:', deployment.data.id);
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment commands here
+          # Example: kubectl apply -f k8s/production/
+      
+      - name: Health check
+        run: |
+          echo "Running health checks..."
+          for service in sales inventory delivery suppliers offers; do
+            curl -f http://api.somaai.com/$service/health || exit 1
+          done
+      
+      - name: Update deployment status
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          script: |
+            const state = '${{ job.status }}' === 'success' ? 'success' : 'failure';
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment.id,
+              state: state,
+              environment_url: 'https://api.somaai.com',
+            });
+      
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: 'Production deployment ${{ job.status }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    needs: deploy-production
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Rollback production
+        run: |
+          echo "Rolling back production deployment..."
+          # Add your rollback commands here
+      
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: 'Production rollback executed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
