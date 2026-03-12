@@ -1,6 +1,5 @@
 import {
   Injectable,
-  BadRequestException,
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
@@ -37,7 +36,7 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(
       password,
-      parseInt(process.env.BCRYPT_ROUNDS) || 10,
+      parseInt(process.env.BCRYPT_ROUNDS || '10'),
     );
 
     // Create user

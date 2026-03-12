@@ -68,7 +68,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getMe(@Request() req) {
+  async getMe(@Request() req: any) {
     return {
       id: req.user.id,
       email: req.user.email,
@@ -99,7 +99,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async verifyToken(@Request() req) {
+  async verifyToken(@Request() req: any) {
     return {
       valid: true,
       user: {

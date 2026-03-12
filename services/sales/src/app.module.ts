@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SalesModule } from './sales/sales.module';
+import { SalesConsumerService } from './kafka/sales.consumer';
 import { SaleEntity } from './sales/entities/sale.entity';
 
 @Module({
@@ -21,6 +22,6 @@ import { SaleEntity } from './sales/entities/sale.entity';
     SalesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SalesConsumerService],
 })
 export class AppModule {}

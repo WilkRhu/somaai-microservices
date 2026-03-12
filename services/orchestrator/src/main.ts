@@ -26,8 +26,8 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Monolith Core API')
-    .setDescription('Core service for users, establishments, and subscriptions')
+    .setTitle('Orchestrator API')
+    .setDescription('Central orchestrator for SomaAI microservices')
     .setVersion('1.0.0')
     .addBearerAuth(
       {
@@ -37,18 +37,17 @@ async function bootstrap() {
       },
       'access-token',
     )
-    .addTag('Users', 'User management endpoints')
-    .addTag('Establishments', 'Establishment management endpoints')
-    .addTag('Subscriptions', 'Subscription management endpoints')
+    .addTag('Orders', 'Order orchestration endpoints')
+    .addTag('Health', 'Health check endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.APP_PORT || 3000;
+  const port = process.env.APP_PORT || 3009;
   await app.listen(port);
 
-  console.log(`Monolith Service is running on port ${port}`);
+  console.log(`Orchestrator Service is running on port ${port}`);
   console.log(`Swagger docs available at http://localhost:${port}/api/docs`);
 }
 

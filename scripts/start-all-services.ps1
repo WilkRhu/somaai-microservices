@@ -8,6 +8,7 @@ Write-Host ""
 $services = @(
     "auth",
     "monolith",
+    "orchestrator",
     "sales",
     "inventory",
     "delivery",
@@ -22,6 +23,7 @@ $services = @(
 $colors = @{
     "auth" = "Cyan"
     "monolith" = "Magenta"
+    "orchestrator" = "Green"
     "sales" = "Yellow"
     "inventory" = "Green"
     "delivery" = "Blue"
@@ -69,6 +71,7 @@ foreach ($proc in $processes) {
 
 Write-Host ""
 Write-Host "URLs dos Servicos:" -ForegroundColor Cyan
+Write-Host "  * Orchestrator: http://localhost:3009" -ForegroundColor Green
 Write-Host "  * Auth Service: http://localhost:3000" -ForegroundColor Cyan
 Write-Host "  * Monolith: http://localhost:3000" -ForegroundColor Magenta
 Write-Host "  * Sales: http://localhost:3001" -ForegroundColor Yellow

@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FiscalModule } from './fiscal/fiscal.module';
 import { NfceEntity } from './fiscal/entities/nfce.entity';
+import { FiscalConsumerService } from './kafka/fiscal.consumer';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { NfceEntity } from './fiscal/entities/nfce.entity';
     FiscalModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, FiscalConsumerService],
 })
 export class AppModule {}

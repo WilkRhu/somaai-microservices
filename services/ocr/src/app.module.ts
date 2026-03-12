@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OcrModule } from './ocr/ocr.module';
+import { OcrConsumerService } from './kafka/ocr.consumer';
 
 @Module({
   imports: [
@@ -25,6 +26,6 @@ import { OcrModule } from './ocr/ocr.module';
     OcrModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, OcrConsumerService],
 })
 export class AppModule {}

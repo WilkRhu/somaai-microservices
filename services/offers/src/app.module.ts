@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OffersModule } from './offers/offers.module';
 import { OfferEntity } from './offers/entities/offer.entity';
+import { OffersConsumerService } from './kafka/offers.consumer';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { OfferEntity } from './offers/entities/offer.entity';
     OffersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, OffersConsumerService],
 })
 export class AppModule {}

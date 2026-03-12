@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PaymentsModule } from './payments/payments.module';
 import { PaymentEntity } from './payments/entities/payment.entity';
+import { PaymentsConsumerService } from './kafka/payments.consumer';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { PaymentEntity } from './payments/entities/payment.entity';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PaymentsConsumerService],
 })
 export class AppModule {}
