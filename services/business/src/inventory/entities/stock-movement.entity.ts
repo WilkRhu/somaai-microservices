@@ -8,8 +8,8 @@ import {
 import { StockMovementType } from '../enums/stock-movement-type.enum';
 
 @Entity('stock_movements')
-@Index(['inventoryItemId'])
-@Index(['saleId'])
+@Index('idx_movements_inventoryItemId', ['inventoryItemId'])
+@Index('idx_movements_saleId', ['saleId'])
 export class StockMovement {
   @PrimaryGeneratedColumn('uuid')
   id: string;

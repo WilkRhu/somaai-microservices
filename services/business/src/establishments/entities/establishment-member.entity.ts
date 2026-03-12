@@ -11,8 +11,8 @@ import {
 import { Establishment } from './establishment.entity';
 
 @Entity('establishment_members')
-@Index(['establishmentId'])
-@Index(['userId'])
+@Index('idx_members_establishmentId', ['establishmentId'])
+@Index('idx_members_userId', ['userId'])
 export class EstablishmentMember {
   @PrimaryGeneratedColumn('uuid')
   id: string;

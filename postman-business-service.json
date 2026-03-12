@@ -1,0 +1,648 @@
+{
+  "info": {
+    "_postman_id": "business-service-collection",
+    "name": "Business Service API",
+    "description": "Collection for testing SomaAI Business Service endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Establishments",
+      "item": [
+        {
+          "name": "Create Establishment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Loja Principal\",\n  \"cnpj\": \"12345678000190\",\n  \"ownerId\": \"user-123\",\n  \"address\": \"Rua Principal, 100\",\n  \"city\": \"São Paulo\",\n  \"state\": \"SP\",\n  \"zipCode\": \"01310-100\",\n  \"phone\": \"1133334444\",\n  \"email\": \"loja@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/establishments",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "establishments"]
+            }
+          }
+        },
+        {
+          "name": "List Establishments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/establishments",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "establishments"]
+            }
+          }
+        },
+        {
+          "name": "Get Establishment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/establishments/{{establishment_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "establishments", "{{establishment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Establishment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Loja Principal - Atualizada\",\n  \"phone\": \"1133335555\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/establishments/{{establishment_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "establishments", "{{establishment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Establishment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/establishments/{{establishment_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "establishments", "{{establishment_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"name\": \"João Silva\",\n  \"cpf\": \"12345678900\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"11999999999\",\n  \"address\": \"Rua A, 123\",\n  \"city\": \"São Paulo\",\n  \"state\": \"SP\",\n  \"zipCode\": \"01310-100\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/customers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "customers"]
+            }
+          }
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/customers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/customers/{{customer_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva Santos\",\n  \"phone\": \"11988888888\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/customers/{{customer_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/customers/{{customer_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "customers", "{{customer_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Create Inventory Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"barcode\": \"7891234567890\",\n  \"name\": \"Produto A\",\n  \"category\": \"Eletrônicos\",\n  \"brand\": \"Brand X\",\n  \"costPrice\": 50.00,\n  \"salePrice\": 99.90,\n  \"quantity\": 100,\n  \"minQuantity\": 10,\n  \"unit\": \"UN\",\n  \"description\": \"Descrição do produto\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/inventory",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory"]
+            }
+          }
+        },
+        {
+          "name": "List Inventory Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/inventory?establishmentId={{establishment_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory"],
+              "query": [
+                {
+                  "key": "establishmentId",
+                  "value": "{{establishment_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Inventory Item by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/inventory/{{item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Inventory Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 95,\n  \"salePrice\": 109.90\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/inventory/{{item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Stock Movement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventoryItemId\": \"{{item_id}}\",\n  \"type\": \"SALE\",\n  \"quantity\": 5,\n  \"reason\": \"Venda realizada\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/inventory/movements",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory", "movements"]
+            }
+          }
+        },
+        {
+          "name": "Get Stock Movements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/inventory/{{item_id}}/movements",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["inventory", "{{item_id}}", "movements"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "item": [
+        {
+          "name": "Create Sale",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"customerId\": \"{{customer_id}}\",\n  \"totalAmount\": 299.70,\n  \"status\": \"COMPLETED\",\n  \"paymentMethod\": \"CREDIT_CARD\",\n  \"notes\": \"Venda realizada com sucesso\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/sales",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "sales"]
+            }
+          }
+        },
+        {
+          "name": "List Sales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/sales",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "sales"]
+            }
+          }
+        },
+        {
+          "name": "Get Sale by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/sales/{{sale_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "sales", "{{sale_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Item to Sale",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventoryItemId\": \"{{item_id}}\",\n  \"quantity\": 3,\n  \"unitPrice\": 99.90,\n  \"totalPrice\": 299.70\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/sales/{{sale_id}}/items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "sales", "{{sale_id}}", "items"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Create Expense",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"category\": \"UTILITIES\",\n  \"description\": \"Conta de luz\",\n  \"amount\": 500.00,\n  \"paymentMethod\": \"BANK_TRANSFER\",\n  \"status\": \"PENDING\",\n  \"expenseDate\": \"2026-03-12\",\n  \"dueDate\": \"2026-03-20\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/expenses",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "expenses"]
+            }
+          }
+        },
+        {
+          "name": "List Expenses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/expenses",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "expenses"]
+            }
+          }
+        },
+        {
+          "name": "Get Expense by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/expenses/{{expense_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "expenses", "{{expense_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Expense",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\",\n  \"paidDate\": \"2026-03-15\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/expenses/{{expense_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "expenses", "{{expense_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"name\": \"Fornecedor ABC\",\n  \"cnpj\": \"98765432000100\",\n  \"email\": \"contato@fornecedor.com\",\n  \"phone\": \"1133334444\",\n  \"address\": \"Rua B, 456\",\n  \"city\": \"São Paulo\",\n  \"state\": \"SP\",\n  \"zipCode\": \"01310-100\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/suppliers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "suppliers"]
+            }
+          }
+        },
+        {
+          "name": "List Suppliers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/suppliers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "suppliers"]
+            }
+          }
+        },
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"supplierId\": \"{{supplier_id}}\",\n  \"orderNumber\": \"PO-001\",\n  \"status\": \"PENDING\",\n  \"totalAmount\": 5000.00,\n  \"expectedDeliveryDate\": \"2026-03-20\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/suppliers/purchase-orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "suppliers", "purchase-orders"]
+            }
+          }
+        },
+        {
+          "name": "List Purchase Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/suppliers/purchase-orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "suppliers", "purchase-orders"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Offers",
+      "item": [
+        {
+          "name": "Create Offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentId\": \"{{establishment_id}}\",\n  \"inventoryItemId\": \"{{item_id}}\",\n  \"name\": \"Promoção Especial\",\n  \"description\": \"Desconto de 20% em produtos selecionados\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 20,\n  \"startDate\": \"2026-03-12T00:00:00Z\",\n  \"endDate\": \"2026-03-31T23:59:59Z\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3011/api/offers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "offers"]
+            }
+          }
+        },
+        {
+          "name": "List Offers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/offers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "offers"]
+            }
+          }
+        },
+        {
+          "name": "Get Offer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3011/api/offers/{{offer_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3011",
+              "path": ["api", "offers", "{{offer_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "establishment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sale_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expense_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "supplier_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offer_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

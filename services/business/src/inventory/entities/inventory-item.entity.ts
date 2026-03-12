@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 
 @Entity('inventory_items')
-@Index(['establishmentId'])
-@Index(['barcode'], { unique: true, where: 'barcode IS NOT NULL' })
+@Index('idx_inventory_establishmentId', ['establishmentId'])
+@Index('idx_inventory_barcode', ['barcode'], { unique: true, where: 'barcode IS NOT NULL' })
 export class InventoryItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 
 @Entity('customers')
-@Index(['establishmentId'])
-@Index(['cpf'], { unique: true, where: 'cpf IS NOT NULL' })
+@Index('idx_customers_establishmentId', ['establishmentId'])
+@Index('idx_customers_cpf', ['cpf'], { unique: true, where: 'cpf IS NOT NULL' })
 export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id: string;

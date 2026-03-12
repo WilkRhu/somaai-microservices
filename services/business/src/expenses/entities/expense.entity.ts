@@ -10,9 +10,9 @@ import { ExpenseCategory } from '../enums/expense-category.enum';
 import { ExpenseStatus } from '../enums/expense-status.enum';
 import { PaymentMethod } from '../../shared/enums/payment-method.enum';
 
-@Entity('business_expenses')
-@Index(['establishmentId', 'expenseDate'])
-@Index(['establishmentId', 'status'])
+@Entity('expenses')
+@Index('idx_expenses_establishment_date', ['establishmentId', 'expenseDate'])
+@Index('idx_expenses_establishment_status', ['establishmentId', 'status'])
 export class Expense {
   @PrimaryGeneratedColumn('uuid')
   id: string;

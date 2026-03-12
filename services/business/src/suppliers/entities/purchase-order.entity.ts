@@ -15,8 +15,8 @@ export enum PurchaseOrderStatus {
 }
 
 @Entity('purchase_orders')
-@Index(['establishmentId', 'status'])
-@Index(['supplierId'])
+@Index('idx_po_establishment_status', ['establishmentId', 'status'])
+@Index('idx_po_supplierId', ['supplierId'])
 export class PurchaseOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;

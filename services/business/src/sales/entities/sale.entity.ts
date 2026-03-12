@@ -12,9 +12,9 @@ import { PaymentMethod } from '../../shared/enums/payment-method.enum';
 import { SaleItem } from './sale-item.entity';
 
 @Entity('sales')
-@Index(['establishmentId', 'createdAt'])
-@Index(['customerId'])
-@Index(['status'])
+@Index('idx_sales_establishment_created', ['establishmentId', 'createdAt'])
+@Index('idx_sales_customerId', ['customerId'])
+@Index('idx_sales_status', ['status'])
 export class Sale {
   @PrimaryGeneratedColumn('uuid')
   id: string;

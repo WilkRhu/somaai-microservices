@@ -26,7 +26,7 @@ import { OffersModule } from './offers/offers.module';
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_DATABASE || 'somaai_business',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: false,
+      synchronize: true,
       logging: process.env.DB_LOGGING === 'true',
     }),
     HttpModule,

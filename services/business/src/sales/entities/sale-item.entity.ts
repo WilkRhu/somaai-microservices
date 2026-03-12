@@ -10,8 +10,8 @@ import {
 import { Sale } from './sale.entity';
 
 @Entity('sale_items')
-@Index(['saleId'])
-@Index(['inventoryItemId'])
+@Index('idx_saleItems_saleId', ['saleId'])
+@Index('idx_saleItems_inventoryItemId', ['inventoryItemId'])
 export class SaleItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;

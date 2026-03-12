@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 @Entity('offer_notifications')
-@Index(['offerId', 'customerId'])
+@Index('idx_notifications_offer_customer', ['offerId', 'customerId'])
 export class OfferNotification {
   @PrimaryGeneratedColumn('uuid')
   id: string;

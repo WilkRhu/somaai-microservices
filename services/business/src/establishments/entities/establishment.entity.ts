@@ -10,8 +10,8 @@ import {
 import { EstablishmentMember } from './establishment-member.entity';
 
 @Entity('establishments')
-@Index(['cnpj'], { unique: true })
-@Index(['ownerId'])
+@Index('idx_establishments_cnpj', ['cnpj'], { unique: true })
+@Index('idx_establishments_ownerId', ['ownerId'])
 export class Establishment {
   @PrimaryGeneratedColumn('uuid')
   id: string;

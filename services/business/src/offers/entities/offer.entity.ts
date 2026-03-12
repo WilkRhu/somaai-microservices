@@ -9,8 +9,8 @@ import {
 import { DiscountType } from '../enums/discount-type.enum';
 
 @Entity('offers')
-@Index(['establishmentId', 'isActive'])
-@Index(['inventoryItemId'])
+@Index('idx_offers_establishment_active', ['establishmentId', 'isActive'])
+@Index('idx_offers_inventoryItemId', ['inventoryItemId'])
 export class Offer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
