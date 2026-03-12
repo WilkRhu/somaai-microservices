@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
-COPY tsconfig.build.json ./
-COPY nest-cli.json ./
+COPY tsconfig.build.json* ./
+COPY nest-cli.json* ./
 
 RUN npm install --legacy-peer-deps
 
@@ -25,13 +25,12 @@ RUN npm install --legacy-peer-deps --only=production
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 3000
+EXPOSE 3011
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3011/health || exit 1
 
 CMD ["node", "dist/main.js"]
-
 
 
 

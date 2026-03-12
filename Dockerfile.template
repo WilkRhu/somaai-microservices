@@ -1,0 +1,40 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Install yarn if needed
+RUN npm install -g yarn
+
+# Copy package files
+COPY package*.json yarn.lock* ./
+COPY tsconfig.json ./
+COPY tsconfig.build.json* ./
+COPY nest-cli.json* ./
+
+# Install dependencies (try yarn first, then npm)
+RUN if [ -f yarn.lock ]; then yarn install; else npm install; fi
+
+COPY src ./src
+
+# Build
+RUN if [ -f yarn.lock ]; then yarn build; else npm run build; fi
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl && npm install -g yarn
+
+COPY package*.json yarn.lock* ./
+
+# Install production dependencies
+RUN if [ -f yarn.lock ]; then yarn install --production; else npm install --production; fi
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+CMD ["node", "dist/main.js"]
