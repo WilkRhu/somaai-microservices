@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      APP_PORT: 3000
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: somaai_auth
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "true"
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRATION: 3600
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
+      JWT_REFRESH_EXPIRATION: 604800
+      BCRYPT_ROUNDS: 10
+    depends_on:
+      - mysql-master
+    networks:
+      - somaai-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql-master
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: somaai_auth
+      MYSQL_USER: somaai
+      MYSQL_PASSWORD: somaai_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - somaai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+
+networks:
+  somaai-network:
+    driver: bridge
