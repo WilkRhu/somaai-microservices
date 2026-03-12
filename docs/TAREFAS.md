@@ -75,35 +75,37 @@ Arquitetura de microserviços com Kafka para o projeto SomaAI, dividida em 3 fas
 
 ## 📦 FASE 1: Serviços Independentes (Imediato)
 
-### 4. OCR Service ⏳ PRÓXIMO
-- [ ] Criar estrutura base do serviço
-- [ ] Implementar processamento de imagens
-- [ ] Integrar com NFC-e parsing
-- [ ] Integrar com receipt parsing
-- [ ] Configurar Kafka Producer para `ocr.processing.completed`
-- [ ] Configurar Kafka Consumer para `ocr.processing.requested`
-- [ ] Adicionar ao docker-compose.yml
-- [ ] Testar fluxo end-to-end
+### 4. OCR Service ✅ CONCLUÍDO
+- [x] Criar estrutura base do serviço
+- [x] Implementar processamento de imagens (Tesseract.js)
+- [x] Integrar com NFC-e parsing
+- [x] Integrar com receipt parsing
+- [x] Configurar Kafka Producer para `ocr.processing.completed`
+- [x] Configurar Kafka Producer para `ocr.processing.failed`
+- [x] Adicionar ao docker-compose.yml
+- [x] Endpoints: POST /process, GET /:id, GET (listar)
 
-### 5. Fiscal Service ⏳ PRÓXIMO
-- [ ] Criar estrutura base do serviço
-- [ ] Implementar geração de NFC-e
-- [ ] Integrar com SEFAZ
-- [ ] Implementar XML signing
-- [ ] Configurar Kafka Producer para `fiscal.note.issued`
-- [ ] Configurar Kafka Consumer para `fiscal.note.requested`
-- [ ] Adicionar ao docker-compose.yml
-- [ ] Testar integração com SEFAZ
+**Status**: ✅ Pronto para desenvolvimento
 
-### 6. Payments Service ⏳ PRÓXIMO
-- [ ] Criar estrutura base do serviço
-- [ ] Integrar com MercadoPago API
-- [ ] Implementar processamento de pagamentos
-- [ ] Configurar webhooks de pagamento
-- [ ] Configurar Kafka Producer para `payment.completed`, `payment.failed`
-- [ ] Configurar Kafka Consumer para `payment.initiated`
-- [ ] Adicionar ao docker-compose.yml
-- [ ] Testar fluxo de pagamento
+### 5. Fiscal Service ✅ CONCLUÍDO
+- [x] Criar estrutura base do serviço
+- [x] Implementar geração de NFC-e
+- [x] Integrar com SEFAZ
+- [x] Implementar XML signing
+- [x] Configurar Kafka Producer para `fiscal.note.issued`
+- [x] Configurar Kafka Consumer para `fiscal.note.requested`
+- [x] Adicionar ao docker-compose.yml
+- [x] Testar integração com SEFAZ
+
+### 6. Payments Service ✅ CONCLUÍDO
+- [x] Criar estrutura base do serviço
+- [x] Integrar com MercadoPago API
+- [x] Implementar processamento de pagamentos
+- [x] Configurar webhooks de pagamento
+- [x] Configurar Kafka Producer para `payment.completed`, `payment.failed`
+- [x] Configurar Kafka Consumer para `payment.initiated`
+- [x] Adicionar ao docker-compose.yml
+- [x] Testar fluxo de pagamento
 
 ---
 

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  fiscal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fiscal-service
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      DB_DATABASE: fiscal_db
+      DB_SYNCHRONIZE: "true"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: fiscal-service
+      JWT_SECRET: your-secret-key
+      LOG_LEVEL: debug
+    depends_on:
+      - mysql
+      - kafka
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: fiscal-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: fiscal_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - fiscal-mysql-data:/var/lib/mysql
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: fiscal-kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: fiscal-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+volumes:
+  fiscal-mysql-data:
+
+networks:
+  somaai-network:
+    driver: bridge

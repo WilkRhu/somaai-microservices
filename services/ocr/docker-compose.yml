@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ocr-service
+    ports:
+      - "3006:3006"
+    environment:
+      NODE_ENV: development
+      APP_PORT: 3006
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: somaai_ocr
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "true"
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_CLIENT_ID: ocr-service
+      KAFKA_GROUP_ID: ocr-service-group
+      OCR_LANGUAGE: por
+      OCR_CONFIDENCE_THRESHOLD: 0.5
+    depends_on:
+      - mysql-master
+    networks:
+      - somaai-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql-master
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: somaai_ocr
+      MYSQL_USER: somaai
+      MYSQL_PASSWORD: somaai_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - somaai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+
+networks:
+  somaai-network:
+    driver: bridge
