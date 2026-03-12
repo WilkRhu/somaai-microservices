@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { BusinessModule } from './business/business.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { KafkaModule } from './kafka/kafka.module';
     KafkaModule,
     AuthModule,
     OrdersModule,
+    BusinessModule,
   ],
   controllers: [AppController],
   providers: [AppService],

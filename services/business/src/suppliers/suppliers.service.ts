@@ -6,6 +6,7 @@ import { PurchaseOrder } from './entities/purchase-order.entity';
 
 @Injectable()
 export class SuppliersService {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(
     @InjectRepository(Supplier)
     private readonly supplierRepository: Repository<Supplier>,

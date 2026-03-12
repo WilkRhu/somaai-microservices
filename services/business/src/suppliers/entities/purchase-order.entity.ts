@@ -4,11 +4,8 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
   Index,
 } from 'typeorm';
-import { Supplier } from './supplier.entity';
 
 export enum PurchaseOrderStatus {
   PENDING = 'pending',

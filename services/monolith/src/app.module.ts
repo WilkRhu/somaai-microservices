@@ -5,6 +5,8 @@ import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
+import { ProductsModule } from './products/products.module';
+import { PurchasesModule } from './purchases/purchases.module';
 import { EstablishmentsModule } from './establishments/establishments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
@@ -27,6 +29,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     }),
     HttpModule,
     UsersModule,
+    ProductsModule,
+    PurchasesModule,
     EstablishmentsModule,
     SubscriptionsModule,
   ],
