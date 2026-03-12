@@ -2,28 +2,29 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SalesService } from './sales.service';
 import { SaleEntity } from './entities/sale.entity';
-import { SalesProducerService } from '../kafka/sales.producer';
 import { CreateSaleDto } from './dto/create-sale.dto';
-import { mockRepository } from '../../../test/mocks/database.mock';
-import { mockKafkaProducer } from '../../../test/mocks/kafka.mock';
+import { UpdateSaleDto } from './dto/update-sale.dto';
 
 describe('SalesService', () => {
   let service: SalesService;
-  let module: TestingModule;
+  let mockRepository: any;
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    mockRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      find: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SalesService,
         {
           provide: getRepositoryToken(SaleEntity),
           useValue: mockRepository,
-        },
-        {
-          provide: SalesProducerService,
-          useValue: {
-            publishSaleCreated: jest.fn().mockResolvedValue(undefined),
-          },
         },
       ],
     }).compile();
@@ -31,22 +32,22 @@ describe('SalesService', () => {
     service = module.get<SalesService>(SalesService);
   });
 
-  afterEach(async () => {
-    await module.close();
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createSale', () => {
     it('should create a sale successfully', async () => {
       const createSaleDto: CreateSaleDto = {
-        customerId: 'cust-123',
-        items: [{ productId: 'prod-001', quantity: 2, unitPrice: 100 }],
-        totalAmount: 200,
+        customerId: 'customer-123',
+        items: [{ productId: 'prod-1', quantity: 2, unitPrice: 50 }],
+        totalAmount: 100,
       };
 
       const expectedSale = {
         id: 'sale-123',
         ...createSaleDto,
+        status: 'PENDING',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -63,65 +64,51 @@ describe('SalesService', () => {
 
     it('should throw error when creating sale fails', async () => {
       const createSaleDto: CreateSaleDto = {
-        customerId: 'cust-123',
-        items: [{ productId: 'prod-001', quantity: 2, unitPrice: 100 }],
-        totalAmount: 200,
+        customerId: 'customer-123',
+        items: [{ productId: 'prod-1', quantity: 2, unitPrice: 50 }],
+        totalAmount: 100,
       };
 
-      mockRepository.create.mockImplementation(() => {
-        throw new Error('Database error');
-      });
+      mockRepository.create.mockReturnValue(createSaleDto);
+      mockRepository.save.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createSale(createSaleDto)).rejects.toThrow(
-        'Database error',
-      );
+      await expect(service.createSale(createSaleDto)).rejects.toThrow('Database error');
     });
   });
 
-  describe('getSale', () => {
-    it('should retrieve a sale by id', async () => {
+  describe('getSaleById', () => {
+    it('should return a sale by id', async () => {
       const saleId = 'sale-123';
       const expectedSale = {
         id: saleId,
-        customerId: 'cust-123',
-        items: [{ productId: 'prod-001', quantity: 2, unitPrice: 100 }],
-        totalAmount: 200,
+        customerId: 'customer-123',
+        totalAmount: 100,
+        status: 'PENDING',
       };
 
       mockRepository.findOne.mockResolvedValue(expectedSale);
 
-      const result = await service.getSale(saleId);
+      const result = await service.getSaleById(saleId);
 
       expect(result).toEqual(expectedSale);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: saleId },
-      });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: saleId } });
     });
 
     it('should return null when sale not found', async () => {
+      const saleId = 'non-existent';
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getSale('non-existent');
+      const result = await service.getSaleById(saleId);
 
       expect(result).toBeNull();
     });
   });
 
   describe('listSales', () => {
-    it('should list all sales', async () => {
+    it('should return list of sales', async () => {
       const expectedSales = [
-        {
-          id: 'sale-1',
-          customerId: 'cust-123',
-          items: [],
-          totalAmount: 100,
-        },
-        {
-          id: 'sale-2',
-          customerId: 'cust-456',
-          items: [],
-          totalAmount: 200,
-        },
+        { id: 'sale-1', customerId: 'customer-1', totalAmount: 100 },
+        { id: 'sale-2', customerId: 'customer-2', totalAmount: 200 },
       ];
 
       mockRepository.find.mockResolvedValue(expectedSales);
@@ -131,23 +118,36 @@ describe('SalesService', () => {
       expect(result).toEqual(expectedSales);
       expect(mockRepository.find).toHaveBeenCalled();
     });
+
+    it('should filter sales by customerId', async () => {
+      const customerId = 'customer-123';
+      const expectedSales = [{ id: 'sale-1', customerId, totalAmount: 100 }];
+
+      mockRepository.find.mockResolvedValue(expectedSales);
+
+      const result = await service.listSales(customerId);
+
+      expect(result).toEqual(expectedSales);
+    });
   });
 
   describe('updateSale', () => {
-    it('should update a sale', async () => {
+    it('should update a sale successfully', async () => {
       const saleId = 'sale-123';
-      const updateData = { totalAmount: 300 };
+      const updateSaleDto: UpdateSaleDto = { status: 'COMPLETED' };
+      const updatedSale = { id: saleId, ...updateSaleDto };
 
       mockRepository.update.mockResolvedValue({ affected: 1 });
+      mockRepository.findOne.mockResolvedValue(updatedSale);
 
-      await service.updateSale(saleId, updateData);
+      const result = await service.updateSale(saleId, updateSaleDto);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(saleId, updateData);
+      expect(mockRepository.update).toHaveBeenCalledWith(saleId, updateSaleDto);
     });
   });
 
   describe('deleteSale', () => {
-    it('should delete a sale', async () => {
+    it('should delete a sale successfully', async () => {
       const saleId = 'sale-123';
 
       mockRepository.delete.mockResolvedValue({ affected: 1 });

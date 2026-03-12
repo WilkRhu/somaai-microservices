@@ -7,21 +7,19 @@ describe('SalesController', () => {
   let controller: SalesController;
   let service: SalesService;
 
-  const mockSalesService = {
-    createSale: jest.fn(),
-    getSale: jest.fn(),
-    listSales: jest.fn(),
-    updateSale: jest.fn(),
-    deleteSale: jest.fn(),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SalesController],
       providers: [
         {
           provide: SalesService,
-          useValue: mockSalesService,
+          useValue: {
+            createSale: jest.fn(),
+            getSaleById: jest.fn(),
+            listSales: jest.fn(),
+            updateSale: jest.fn(),
+            deleteSale: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -37,58 +35,62 @@ describe('SalesController', () => {
   describe('createSale', () => {
     it('should create a sale', async () => {
       const createSaleDto: CreateSaleDto = {
-        customerId: 'cust-123',
-        items: [{ productId: 'prod-001', quantity: 2, unitPrice: 100 }],
-        totalAmount: 200,
+        customerId: 'customer-123',
+        items: [{ productId: 'prod-1', quantity: 2, unitPrice: 50 }],
+        totalAmount: 100,
       };
 
-      const expectedResponse = {
-        id: 'sale-123',
-        ...createSaleDto,
-        createdAt: new Date(),
-      };
+      const expectedResult = { id: 'sale-123', ...createSaleDto };
 
-      mockSalesService.createSale.mockResolvedValue(expectedResponse);
+      jest.spyOn(service, 'createSale').mockResolvedValue(expectedResult);
 
       const result = await controller.createSale(createSaleDto);
 
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(expectedResult);
       expect(service.createSale).toHaveBeenCalledWith(createSaleDto);
     });
   });
 
   describe('getSale', () => {
-    it('should get a sale by id', async () => {
+    it('should return a sale by id', async () => {
       const saleId = 'sale-123';
-      const expectedSale = {
-        id: saleId,
-        customerId: 'cust-123',
-        items: [],
-        totalAmount: 200,
-      };
+      const expectedResult = { id: saleId, customerId: 'customer-123', totalAmount: 100 };
 
-      mockSalesService.getSale.mockResolvedValue(expectedSale);
+      jest.spyOn(service, 'getSaleById').mockResolvedValue(expectedResult);
 
       const result = await controller.getSale(saleId);
 
-      expect(result).toEqual(expectedSale);
-      expect(service.getSale).toHaveBeenCalledWith(saleId);
+      expect(result).toEqual(expectedResult);
+      expect(service.getSaleById).toHaveBeenCalledWith(saleId);
     });
   });
 
   describe('listSales', () => {
-    it('should list all sales', async () => {
-      const expectedSales = [
-        { id: 'sale-1', customerId: 'cust-123', items: [], totalAmount: 100 },
-        { id: 'sale-2', customerId: 'cust-456', items: [], totalAmount: 200 },
+    it('should return list of sales', async () => {
+      const expectedResult = [
+        { id: 'sale-1', customerId: 'customer-1', totalAmount: 100 },
+        { id: 'sale-2', customerId: 'customer-2', totalAmount: 200 },
       ];
 
-      mockSalesService.listSales.mockResolvedValue(expectedSales);
+      jest.spyOn(service, 'listSales').mockResolvedValue(expectedResult);
 
       const result = await controller.listSales();
 
-      expect(result).toEqual(expectedSales);
+      expect(result).toEqual(expectedResult);
       expect(service.listSales).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteSale', () => {
+    it('should delete a sale', async () => {
+      const saleId = 'sale-123';
+
+      jest.spyOn(service, 'deleteSale').mockResolvedValue(undefined);
+
+      const result = await controller.deleteSale(saleId);
+
+      expect(result).toEqual({ success: true });
+      expect(service.deleteSale).toHaveBeenCalledWith(saleId);
     });
   });
 });
