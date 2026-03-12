@@ -2,26 +2,27 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
+import { UpdateInventoryItemDto } from './dto/update-inventory-item.dto';
 
 describe('InventoryController', () => {
   let controller: InventoryController;
   let service: InventoryService;
 
-  const mockInventoryService = {
-    createItem: jest.fn(),
-    getItemById: jest.fn(),
-    listItems: jest.fn(),
-    updateQuantity: jest.fn(),
-    decreaseQuantity: jest.fn(),
-  };
-
   beforeEach(async () => {
+    const mockService = {
+      createItem: jest.fn(),
+      getItemById: jest.fn(),
+      listItems: jest.fn(),
+      updateItem: jest.fn(),
+      deleteItem: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [InventoryController],
       providers: [
         {
           provide: InventoryService,
-          useValue: mockInventoryService,
+          useValue: mockService,
         },
       ],
     }).compile();
@@ -34,75 +35,105 @@ describe('InventoryController', () => {
     jest.clearAllMocks();
   });
 
-  describe('createItem', () => {
+  describe('create', () => {
     it('should create an inventory item', async () => {
       const createDto: CreateInventoryItemDto = {
-        productId: 'prod-001',
+        productId: 'prod-123',
         quantity: 100,
-        warehouseId: 'warehouse-1',
+        minQuantity: 10,
+        maxQuantity: 500,
       };
 
-      const expectedResponse = {
-        id: 'inv-123',
+      const expectedResult = {
+        id: 'item-123',
         ...createDto,
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      mockInventoryService.createItem.mockResolvedValue(expectedResponse);
+      jest.spyOn(service, 'createItem').mockResolvedValue(expectedResult);
 
-      const result = await controller.createItem(createDto);
+      const result = await controller.create(createDto);
 
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(expectedResult);
       expect(service.createItem).toHaveBeenCalledWith(createDto);
     });
   });
 
-  describe('getItem', () => {
-    it('should get an inventory item by id', async () => {
-      const itemId = 'inv-123';
-      const expectedItem = {
+  describe('findAll', () => {
+    it('should return list of inventory items', async () => {
+      const expectedResult = [
+        { id: 'item-1', productId: 'prod-1', quantity: 100 },
+        { id: 'item-2', productId: 'prod-2', quantity: 200 },
+      ];
+
+      jest.spyOn(service, 'listItems').mockResolvedValue(expectedResult);
+
+      const result = await controller.findAll();
+
+      expect(result).toEqual(expectedResult);
+      expect(service.listItems).toHaveBeenCalled();
+    });
+
+    it('should filter by productId', async () => {
+      const productId = 'prod-123';
+      const expectedResult = [{ id: 'item-1', productId, quantity: 100 }];
+
+      jest.spyOn(service, 'listItems').mockResolvedValue(expectedResult);
+
+      const result = await controller.findAll(productId);
+
+      expect(result).toEqual(expectedResult);
+      expect(service.listItems).toHaveBeenCalledWith(productId);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return an inventory item by id', async () => {
+      const itemId = 'item-123';
+      const expectedResult = {
         id: itemId,
-        productId: 'prod-001',
+        productId: 'prod-123',
         quantity: 100,
-        warehouseId: 'warehouse-1',
       };
 
-      mockInventoryService.getItemById.mockResolvedValue(expectedItem);
+      jest.spyOn(service, 'getItemById').mockResolvedValue(expectedResult);
 
-      const result = await controller.getItem(itemId);
+      const result = await controller.findOne(itemId);
 
-      expect(result).toEqual(expectedItem);
+      expect(result).toEqual(expectedResult);
       expect(service.getItemById).toHaveBeenCalledWith(itemId);
     });
   });
 
-  describe('listItems', () => {
-    it('should list all inventory items', async () => {
-      const expectedItems = [
-        { id: 'inv-1', productId: 'prod-001', quantity: 100, warehouseId: 'warehouse-1' },
-        { id: 'inv-2', productId: 'prod-002', quantity: 50, warehouseId: 'warehouse-1' },
-      ];
+  describe('update', () => {
+    it('should update an inventory item', async () => {
+      const itemId = 'item-123';
+      const updateDto: UpdateInventoryItemDto = { quantity: 150 };
+      const expectedResult = {
+        id: itemId,
+        productId: 'prod-123',
+        quantity: 150,
+      };
 
-      mockInventoryService.listItems.mockResolvedValue(expectedItems);
+      jest.spyOn(service, 'updateItem').mockResolvedValue(expectedResult);
 
-      const result = await controller.listItems();
+      const result = await controller.update(itemId, updateDto);
 
-      expect(result).toEqual(expectedItems);
-      expect(service.listItems).toHaveBeenCalled();
+      expect(result).toEqual(expectedResult);
+      expect(service.updateItem).toHaveBeenCalledWith(itemId, updateDto);
     });
+  });
 
-    it('should filter items by productId', async () => {
-      const productId = 'prod-001';
-      const expectedItems = [
-        { id: 'inv-1', productId, quantity: 100, warehouseId: 'warehouse-1' },
-      ];
+  describe('remove', () => {
+    it('should delete an inventory item', async () => {
+      const itemId = 'item-123';
 
-      mockInventoryService.listItems.mockResolvedValue(expectedItems);
+      jest.spyOn(service, 'deleteItem').mockResolvedValue(undefined);
 
-      const result = await controller.listItems(productId);
+      await controller.remove(itemId);
 
-      expect(result).toEqual(expectedItems);
-      expect(service.listItems).toHaveBeenCalledWith(productId);
+      expect(service.deleteItem).toHaveBeenCalledWith(itemId);
     });
   });
 });

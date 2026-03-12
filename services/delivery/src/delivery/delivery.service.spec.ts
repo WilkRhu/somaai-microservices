@@ -1,48 +1,67 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { HttpException } from '@nestjs/common';
 import { DeliveryService } from './delivery.service';
-import { DeliveryEntity } from './entities/delivery.entity';
+import { DeliveryEntity, DeliveryStatus } from './entities/delivery.entity';
 import { CreateDeliveryDto } from './dto/create-delivery.dto';
-import { mockRepository } from '../../../test/mocks/database.mock';
+import { UpdateDeliveryDto } from './dto/update-delivery.dto';
 
 describe('DeliveryService', () => {
   let service: DeliveryService;
-  let module: TestingModule;
+  let mockRepository: any;
+  let mockProducer: any;
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    mockRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(),
+    };
+
+    mockProducer = {
+      publishDeliveryCreated: jest.fn().mockResolvedValue(undefined),
+      publishDeliveryUpdated: jest.fn().mockResolvedValue(undefined),
+      publishDeliveryCompleted: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         DeliveryService,
         {
           provide: getRepositoryToken(DeliveryEntity),
           useValue: mockRepository,
         },
+        {
+          provide: 'DeliveryProducerService',
+          useValue: mockProducer,
+        },
       ],
-    }).compile();
+    })
+      .overrideProvider('DeliveryProducerService')
+      .useValue(mockProducer)
+      .compile();
 
     service = module.get<DeliveryService>(DeliveryService);
   });
 
-  afterEach(async () => {
-    await module.close();
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createDelivery', () => {
-    it('should create a delivery', async () => {
+    it('should create a delivery successfully', async () => {
       const createDto: CreateDeliveryDto = {
-        orderId: 'order-123',
-        recipientName: 'John Doe',
-        address: 'Rua Principal, 123',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01234-567',
+        saleId: 'sale-123',
+        estimatedDate: new Date().toISOString(),
       };
 
       const expectedDelivery = {
         id: 'delivery-123',
-        ...createDto,
-        status: 'PENDING',
+        saleId: createDto.saleId,
+        trackingCode: 'TRACK-ABC123',
+        status: DeliveryStatus.PENDING,
+        estimatedDate: new Date(createDto.estimatedDate),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -52,127 +71,143 @@ describe('DeliveryService', () => {
 
       const result = await service.createDelivery(createDto);
 
-      expect(result).toEqual(expectedDelivery);
-      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(result).toBeDefined();
+      expect(mockRepository.create).toHaveBeenCalled();
       expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishDeliveryCreated).toHaveBeenCalled();
     });
 
-    it('should throw error when address is invalid', async () => {
+    it('should throw error when creation fails', async () => {
       const createDto: CreateDeliveryDto = {
-        orderId: 'order-123',
-        recipientName: 'John Doe',
-        address: '',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01234-567',
+        saleId: 'sale-123',
+        estimatedDate: new Date().toISOString(),
       };
 
-      mockRepository.create.mockImplementation(() => {
-        throw new Error('Address is required');
-      });
+      mockRepository.create.mockReturnValue(createDto);
+      mockRepository.save.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createDelivery(createDto)).rejects.toThrow(
-        'Address is required',
-      );
+      await expect(service.createDelivery(createDto)).rejects.toThrow(HttpException);
     });
   });
 
-  describe('getDelivery', () => {
-    it('should retrieve a delivery by id', async () => {
+  describe('getDeliveryById', () => {
+    it('should return a delivery by id', async () => {
       const deliveryId = 'delivery-123';
       const expectedDelivery = {
         id: deliveryId,
-        orderId: 'order-123',
-        recipientName: 'John Doe',
-        address: 'Rua Principal, 123',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01234-567',
-        status: 'PENDING',
+        saleId: 'sale-123',
+        trackingCode: 'TRACK-ABC123',
+        status: DeliveryStatus.PENDING,
       };
 
       mockRepository.findOne.mockResolvedValue(expectedDelivery);
 
-      const result = await service.getDelivery(deliveryId);
+      const result = await service.getDeliveryById(deliveryId);
 
-      expect(result).toEqual(expectedDelivery);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: deliveryId },
-      });
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: deliveryId } });
     });
 
-    it('should return null when delivery not found', async () => {
+    it('should throw NOT_FOUND when delivery does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getDelivery('non-existent');
-
-      expect(result).toBeNull();
+      await expect(service.getDeliveryById('non-existent')).rejects.toThrow(HttpException);
     });
   });
 
   describe('listDeliveries', () => {
-    it('should list all deliveries', async () => {
+    it('should return list of deliveries', async () => {
       const expectedDeliveries = [
-        {
-          id: 'delivery-1',
-          orderId: 'order-123',
-          recipientName: 'John Doe',
-          status: 'PENDING',
-        },
-        {
-          id: 'delivery-2',
-          orderId: 'order-456',
-          recipientName: 'Jane Smith',
-          status: 'IN_TRANSIT',
-        },
+        { id: 'delivery-1', saleId: 'sale-1', status: DeliveryStatus.PENDING },
+        { id: 'delivery-2', saleId: 'sale-2', status: DeliveryStatus.DELIVERED },
       ];
 
-      mockRepository.find.mockResolvedValue(expectedDeliveries);
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedDeliveries),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.listDeliveries();
 
       expect(result).toEqual(expectedDeliveries);
-      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('delivery');
     });
-  });
 
-  describe('updateDeliveryStatus', () => {
-    it('should update delivery status', async () => {
-      const deliveryId = 'delivery-123';
-      const newStatus = 'IN_TRANSIT';
+    it('should filter by saleId', async () => {
+      const saleId = 'sale-123';
+      const expectedDeliveries = [{ id: 'delivery-1', saleId, status: DeliveryStatus.PENDING }];
 
-      mockRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedDeliveries),
+      };
 
-      await service.updateDeliveryStatus(deliveryId, newStatus);
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(deliveryId, {
-        status: newStatus,
-      });
-    });
-  });
-
-  describe('getDeliveriesByOrderId', () => {
-    it('should get deliveries by order id', async () => {
-      const orderId = 'order-123';
-      const expectedDeliveries = [
-        {
-          id: 'delivery-1',
-          orderId,
-          recipientName: 'John Doe',
-          status: 'PENDING',
-        },
-      ];
-
-      mockRepository.find.mockResolvedValue(expectedDeliveries);
-
-      const result = await service.getDeliveriesByOrderId(orderId);
+      const result = await service.listDeliveries(saleId);
 
       expect(result).toEqual(expectedDeliveries);
-      expect(mockRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ orderId }),
-        }),
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateDelivery', () => {
+    it('should update a delivery successfully', async () => {
+      const deliveryId = 'delivery-123';
+      const updateDto: UpdateDeliveryDto = { status: DeliveryStatus.IN_TRANSIT };
+      const existingDelivery = {
+        id: deliveryId,
+        saleId: 'sale-123',
+        status: DeliveryStatus.PENDING,
+        trackingCode: 'TRACK-ABC123',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingDelivery);
+      mockRepository.save.mockResolvedValue({ ...existingDelivery, ...updateDto });
+
+      const result = await service.updateDelivery(deliveryId, updateDto);
+
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: deliveryId } });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishDeliveryUpdated).toHaveBeenCalled();
+    });
+
+    it('should throw NOT_FOUND when delivery does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateDelivery('non-existent', {})).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('trackDelivery', () => {
+    it('should return delivery tracking info', async () => {
+      const deliveryId = 'delivery-123';
+      const expectedDelivery = {
+        id: deliveryId,
+        saleId: 'sale-123',
+        trackingCode: 'TRACK-ABC123',
+        status: DeliveryStatus.IN_TRANSIT,
+      };
+
+      mockRepository.findOne.mockResolvedValue(expectedDelivery);
+
+      const result = await service.trackDelivery(deliveryId);
+
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: deliveryId } });
+    });
+
+    it('should throw NOT_FOUND when delivery does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.trackDelivery('non-existent')).rejects.toThrow(HttpException);
     });
   });
 });

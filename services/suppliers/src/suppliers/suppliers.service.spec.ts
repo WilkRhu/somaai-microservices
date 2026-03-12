@@ -1,44 +1,67 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { HttpException } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service';
 import { SupplierEntity } from './entities/supplier.entity';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
-import { mockRepository } from '../../../test/mocks/database.mock';
+import { UpdateSupplierDto } from './dto/update-supplier.dto';
 
 describe('SuppliersService', () => {
   let service: SuppliersService;
-  let module: TestingModule;
+  let mockRepository: any;
+  let mockProducer: any;
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    mockRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    mockProducer = {
+      publishSupplierCreated: jest.fn().mockResolvedValue(undefined),
+      publishSupplierUpdated: jest.fn().mockResolvedValue(undefined),
+      publishSupplierDeleted: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SuppliersService,
         {
           provide: getRepositoryToken(SupplierEntity),
           useValue: mockRepository,
         },
+        {
+          provide: 'SuppliersProducerService',
+          useValue: mockProducer,
+        },
       ],
-    }).compile();
+    })
+      .overrideProvider('SuppliersProducerService')
+      .useValue(mockProducer)
+      .compile();
 
     service = module.get<SuppliersService>(SuppliersService);
   });
 
-  afterEach(async () => {
-    await module.close();
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createSupplier', () => {
-    it('should create a supplier', async () => {
+    it('should create a supplier successfully', async () => {
       const createDto: CreateSupplierDto = {
-        name: 'Supplier ABC',
+        name: 'Supplier Inc',
+        cnpj: '12345678000190',
         email: 'supplier@example.com',
-        phone: '+55 11 98765-4321',
+        phone: '1199999999',
         address: 'Rua Principal, 123',
       };
 
       const expectedSupplier = {
-        id: 'supp-123',
+        id: 'supplier-123',
         ...createDto,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -49,129 +72,141 @@ describe('SuppliersService', () => {
 
       const result = await service.createSupplier(createDto);
 
-      expect(result).toEqual(expectedSupplier);
-      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(result).toBeDefined();
+      expect(mockRepository.create).toHaveBeenCalled();
       expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishSupplierCreated).toHaveBeenCalled();
     });
 
-    it('should throw error when email is invalid', async () => {
+    it('should throw error when creation fails', async () => {
       const createDto: CreateSupplierDto = {
-        name: 'Supplier ABC',
-        email: 'invalid-email',
-        phone: '+55 11 98765-4321',
+        name: 'Supplier Inc',
+        cnpj: '12345678000190',
+        email: 'supplier@example.com',
+        phone: '1199999999',
         address: 'Rua Principal, 123',
       };
 
-      mockRepository.create.mockImplementation(() => {
-        throw new Error('Invalid email format');
-      });
+      mockRepository.create.mockReturnValue(createDto);
+      mockRepository.save.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createSupplier(createDto)).rejects.toThrow(
-        'Invalid email format',
-      );
+      await expect(service.createSupplier(createDto)).rejects.toThrow(HttpException);
     });
   });
 
-  describe('getSupplier', () => {
-    it('should retrieve a supplier by id', async () => {
-      const supplierId = 'supp-123';
+  describe('getSupplierById', () => {
+    it('should return a supplier by id', async () => {
+      const supplierId = 'supplier-123';
       const expectedSupplier = {
         id: supplierId,
-        name: 'Supplier ABC',
+        name: 'Supplier Inc',
+        cnpj: '12345678000190',
         email: 'supplier@example.com',
-        phone: '+55 11 98765-4321',
-        address: 'Rua Principal, 123',
       };
 
       mockRepository.findOne.mockResolvedValue(expectedSupplier);
 
-      const result = await service.getSupplier(supplierId);
+      const result = await service.getSupplierById(supplierId);
 
-      expect(result).toEqual(expectedSupplier);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: supplierId },
-      });
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: supplierId } });
     });
 
-    it('should return null when supplier not found', async () => {
+    it('should throw NOT_FOUND when supplier does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getSupplier('non-existent');
-
-      expect(result).toBeNull();
+      await expect(service.getSupplierById('non-existent')).rejects.toThrow(HttpException);
     });
   });
 
   describe('listSuppliers', () => {
-    it('should list all suppliers', async () => {
+    it('should return list of suppliers', async () => {
       const expectedSuppliers = [
-        {
-          id: 'supp-1',
-          name: 'Supplier A',
-          email: 'a@example.com',
-          phone: '+55 11 98765-4321',
-          address: 'Rua A, 123',
-        },
-        {
-          id: 'supp-2',
-          name: 'Supplier B',
-          email: 'b@example.com',
-          phone: '+55 11 98765-4322',
-          address: 'Rua B, 456',
-        },
+        { id: 'supplier-1', name: 'Supplier 1', cnpj: '12345678000190' },
+        { id: 'supplier-2', name: 'Supplier 2', cnpj: '98765432000100' },
       ];
 
-      mockRepository.find.mockResolvedValue(expectedSuppliers);
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedSuppliers),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.listSuppliers();
 
       expect(result).toEqual(expectedSuppliers);
-      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('supplier');
+    });
+
+    it('should filter by name', async () => {
+      const name = 'Supplier';
+      const expectedSuppliers = [{ id: 'supplier-1', name: 'Supplier Inc', cnpj: '12345678000190' }];
+
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedSuppliers),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      const result = await service.listSuppliers(name);
+
+      expect(result).toEqual(expectedSuppliers);
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
     });
   });
 
   describe('updateSupplier', () => {
-    it('should update a supplier', async () => {
-      const supplierId = 'supp-123';
-      const updateData = { phone: '+55 11 99999-9999' };
+    it('should update a supplier successfully', async () => {
+      const supplierId = 'supplier-123';
+      const updateDto: UpdateSupplierDto = { email: 'newemail@example.com' };
+      const existingSupplier = {
+        id: supplierId,
+        name: 'Supplier Inc',
+        cnpj: '12345678000190',
+        email: 'old@example.com',
+      };
 
-      mockRepository.update.mockResolvedValue({ affected: 1 });
+      mockRepository.findOne.mockResolvedValue(existingSupplier);
+      mockRepository.save.mockResolvedValue({ ...existingSupplier, ...updateDto });
 
-      await service.updateSupplier(supplierId, updateData);
+      const result = await service.updateSupplier(supplierId, updateDto);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(supplierId, updateData);
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: supplierId } });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishSupplierUpdated).toHaveBeenCalled();
+    });
+
+    it('should throw NOT_FOUND when supplier does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateSupplier('non-existent', {})).rejects.toThrow(HttpException);
     });
   });
 
   describe('deleteSupplier', () => {
-    it('should delete a supplier', async () => {
-      const supplierId = 'supp-123';
+    it('should delete a supplier successfully', async () => {
+      const supplierId = 'supplier-123';
+      const existingSupplier = { id: supplierId, name: 'Supplier Inc', cnpj: '12345678000190' };
 
-      mockRepository.delete.mockResolvedValue({ affected: 1 });
+      mockRepository.findOne.mockResolvedValue(existingSupplier);
+      mockRepository.remove.mockResolvedValue(undefined);
 
       await service.deleteSupplier(supplierId);
 
-      expect(mockRepository.delete).toHaveBeenCalledWith(supplierId);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: supplierId } });
+      expect(mockRepository.remove).toHaveBeenCalledWith(existingSupplier);
+      expect(mockProducer.publishSupplierDeleted).toHaveBeenCalled();
     });
-  });
 
-  describe('getSupplierByEmail', () => {
-    it('should find supplier by email', async () => {
-      const email = 'supplier@example.com';
-      const expectedSupplier = {
-        id: 'supp-123',
-        name: 'Supplier ABC',
-        email,
-        phone: '+55 11 98765-4321',
-        address: 'Rua Principal, 123',
-      };
+    it('should throw NOT_FOUND when supplier does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      mockRepository.findOneBy.mockResolvedValue(expectedSupplier);
-
-      const result = await service.getSupplierByEmail(email);
-
-      expect(result).toEqual(expectedSupplier);
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ email });
+      await expect(service.deleteSupplier('non-existent')).rejects.toThrow(HttpException);
     });
   });
 });

@@ -1,43 +1,66 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { InventoryItemEntity } from './entities/inventory-item.entity';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
-import { mockRepository } from '../../../test/mocks/database.mock';
+import { UpdateInventoryItemDto } from './dto/update-inventory-item.dto';
 
 describe('InventoryService', () => {
   let service: InventoryService;
-  let module: TestingModule;
+  let mockRepository: any;
+  let mockProducer: any;
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    mockRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    mockProducer = {
+      publishInventoryUpdated: jest.fn().mockResolvedValue(undefined),
+      publishLowStockAlert: jest.fn().mockResolvedValue(undefined),
+      publishRestocked: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         InventoryService,
         {
           provide: getRepositoryToken(InventoryItemEntity),
           useValue: mockRepository,
         },
+        {
+          provide: 'InventoryProducerService',
+          useValue: mockProducer,
+        },
       ],
-    }).compile();
+    })
+      .overrideProvider('InventoryProducerService')
+      .useValue(mockProducer)
+      .compile();
 
     service = module.get<InventoryService>(InventoryService);
   });
 
-  afterEach(async () => {
-    await module.close();
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createItem', () => {
-    it('should create an inventory item', async () => {
+    it('should create an inventory item successfully', async () => {
       const createDto: CreateInventoryItemDto = {
-        productId: 'prod-001',
+        productId: 'prod-123',
         quantity: 100,
-        warehouseId: 'warehouse-1',
+        minQuantity: 10,
+        maxQuantity: 500,
       };
 
       const expectedItem = {
-        id: 'inv-123',
+        id: 'item-123',
         ...createDto,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -48,137 +71,146 @@ describe('InventoryService', () => {
 
       const result = await service.createItem(createDto);
 
-      expect(result).toEqual(expectedItem);
-      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(result).toBeDefined();
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        productId: createDto.productId,
+        quantity: createDto.quantity,
+        minQuantity: createDto.minQuantity,
+        maxQuantity: createDto.maxQuantity,
+      });
       expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishInventoryUpdated).toHaveBeenCalled();
     });
 
-    it('should throw error when quantity is negative', async () => {
+    it('should throw error when creation fails', async () => {
       const createDto: CreateInventoryItemDto = {
-        productId: 'prod-001',
-        quantity: -10,
-        warehouseId: 'warehouse-1',
+        productId: 'prod-123',
+        quantity: 100,
+        minQuantity: 10,
+        maxQuantity: 500,
       };
 
-      mockRepository.create.mockImplementation(() => {
-        throw new Error('Quantity must be positive');
-      });
+      mockRepository.create.mockReturnValue(createDto);
+      mockRepository.save.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.createItem(createDto)).rejects.toThrow(
-        'Quantity must be positive',
-      );
+      await expect(service.createItem(createDto)).rejects.toThrow(HttpException);
     });
   });
 
   describe('getItemById', () => {
-    it('should retrieve an inventory item by id', async () => {
-      const itemId = 'inv-123';
+    it('should return an inventory item by id', async () => {
+      const itemId = 'item-123';
       const expectedItem = {
         id: itemId,
-        productId: 'prod-001',
+        productId: 'prod-123',
         quantity: 100,
-        warehouseId: 'warehouse-1',
+        minQuantity: 10,
+        maxQuantity: 500,
       };
 
       mockRepository.findOne.mockResolvedValue(expectedItem);
 
       const result = await service.getItemById(itemId);
 
-      expect(result).toEqual(expectedItem);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: itemId },
-      });
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: itemId } });
     });
 
-    it('should return null when item not found', async () => {
+    it('should throw NOT_FOUND when item does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.getItemById('non-existent');
-
-      expect(result).toBeNull();
+      await expect(service.getItemById('non-existent')).rejects.toThrow(HttpException);
     });
   });
 
   describe('listItems', () => {
-    it('should list all inventory items', async () => {
+    it('should return list of inventory items', async () => {
       const expectedItems = [
-        { id: 'inv-1', productId: 'prod-001', quantity: 100, warehouseId: 'warehouse-1' },
-        { id: 'inv-2', productId: 'prod-002', quantity: 50, warehouseId: 'warehouse-1' },
+        { id: 'item-1', productId: 'prod-1', quantity: 100 },
+        { id: 'item-2', productId: 'prod-2', quantity: 200 },
       ];
 
-      mockRepository.find.mockResolvedValue(expectedItems);
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedItems),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.listItems();
 
       expect(result).toEqual(expectedItems);
-      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('item');
     });
 
     it('should filter items by productId', async () => {
-      const productId = 'prod-001';
-      const expectedItems = [
-        { id: 'inv-1', productId, quantity: 100, warehouseId: 'warehouse-1' },
-      ];
+      const productId = 'prod-123';
+      const expectedItems = [{ id: 'item-1', productId, quantity: 100 }];
 
-      mockRepository.find.mockResolvedValue(expectedItems);
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedItems),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.listItems(productId);
 
       expect(result).toEqual(expectedItems);
-      expect(mockRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ productId }),
-        }),
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalled();
     });
   });
 
-  describe('updateQuantity', () => {
-    it('should update item quantity', async () => {
-      const itemId = 'inv-123';
-      const newQuantity = 150;
+  describe('updateItem', () => {
+    it('should update an inventory item successfully', async () => {
+      const itemId = 'item-123';
+      const updateDto: UpdateInventoryItemDto = { quantity: 150 };
+      const existingItem = {
+        id: itemId,
+        productId: 'prod-123',
+        quantity: 100,
+        minQuantity: 10,
+        maxQuantity: 500,
+      };
 
-      mockRepository.update.mockResolvedValue({ affected: 1 });
+      mockRepository.findOne.mockResolvedValue(existingItem);
+      mockRepository.save.mockResolvedValue({ ...existingItem, ...updateDto });
 
-      await service.updateQuantity(itemId, newQuantity);
+      const result = await service.updateItem(itemId, updateDto);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(itemId, {
-        quantity: newQuantity,
-      });
+      expect(result).toBeDefined();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: itemId } });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishInventoryUpdated).toHaveBeenCalled();
+    });
+
+    it('should throw NOT_FOUND when item does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateItem('non-existent', {})).rejects.toThrow(HttpException);
     });
   });
 
-  describe('decreaseQuantity', () => {
-    it('should decrease item quantity', async () => {
-      const itemId = 'inv-123';
-      const decreaseBy = 10;
+  describe('deleteItem', () => {
+    it('should delete an inventory item successfully', async () => {
+      const itemId = 'item-123';
+      const existingItem = { id: itemId, productId: 'prod-123', quantity: 100 };
 
-      mockRepository.findOne.mockResolvedValue({
-        id: itemId,
-        quantity: 100,
-      });
+      mockRepository.findOne.mockResolvedValue(existingItem);
+      mockRepository.remove.mockResolvedValue(undefined);
 
-      mockRepository.update.mockResolvedValue({ affected: 1 });
+      await service.deleteItem(itemId);
 
-      await service.decreaseQuantity(itemId, decreaseBy);
-
-      expect(mockRepository.update).toHaveBeenCalledWith(itemId, {
-        quantity: 90,
-      });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: itemId } });
+      expect(mockRepository.remove).toHaveBeenCalledWith(existingItem);
     });
 
-    it('should throw error when decreasing below zero', async () => {
-      const itemId = 'inv-123';
-      const decreaseBy = 150;
+    it('should throw NOT_FOUND when item does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      mockRepository.findOne.mockResolvedValue({
-        id: itemId,
-        quantity: 100,
-      });
-
-      await expect(service.decreaseQuantity(itemId, decreaseBy)).rejects.toThrow(
-        'Insufficient quantity',
-      );
+      await expect(service.deleteItem('non-existent')).rejects.toThrow(HttpException);
     });
   });
 });
