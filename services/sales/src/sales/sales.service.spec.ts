@@ -157,4 +157,71 @@ describe('SalesService', () => {
       expect(mockRepository.delete).toHaveBeenCalledWith(saleId);
     });
   });
+
+  describe('calculateDiscount', () => {
+    it('should calculate and apply discount to sale', async () => {
+      const saleId = 'sale-123';
+      const sale = {
+        id: saleId,
+        customerId: 'customer-123',
+        totalAmount: 100,
+        status: 'PENDING',
+        discountApplied: 0,
+      };
+
+      mockRepository.findOne.mockResolvedValue(sale);
+      mockRepository.save.mockResolvedValue({ ...sale, totalAmount: 90, discountApplied: 10 });
+
+      const result = await service.calculateDiscount(saleId, 10);
+
+      expect(result.totalAmount).toBe(90);
+      expect(result.discountApplied).toBe(10);
+      expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw error for invalid discount percentage', async () => {
+      const saleId = 'sale-123';
+      const sale = { id: saleId, totalAmount: 100 };
+
+      mockRepository.findOne.mockResolvedValue(sale);
+
+      await expect(service.calculateDiscount(saleId, 150)).rejects.toThrow('Discount percentage must be between 0 and 100');
+    });
+
+    it('should throw error when sale not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.calculateDiscount('non-existent', 10)).rejects.toThrow('Sale not found');
+    });
+  });
+
+  describe('updateSaleStatus', () => {
+    it('should update sale status with valid transition', async () => {
+      const saleId = 'sale-123';
+      const sale = { id: saleId, status: 'PENDING', customerId: 'customer-123', totalAmount: 100 };
+
+      mockRepository.findOne.mockResolvedValue(sale);
+      mockRepository.save.mockResolvedValue({ ...sale, status: 'CONFIRMED' });
+
+      const result = await service.updateSaleStatus(saleId, 'CONFIRMED');
+
+      expect(result.status).toBe('CONFIRMED');
+      expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw error for invalid status transition', async () => {
+      const saleId = 'sale-123';
+      const sale = { id: saleId, status: 'COMPLETED' };
+
+      mockRepository.findOne.mockResolvedValue(sale);
+
+      await expect(service.updateSaleStatus(saleId, 'PENDING')).rejects.toThrow('Invalid status transition');
+    });
+
+    it('should throw error when sale not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateSaleStatus('non-existent', 'CONFIRMED')).rejects.toThrow('Sale not found');
+    });
+  });
 });

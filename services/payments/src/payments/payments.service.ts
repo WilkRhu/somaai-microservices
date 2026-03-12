@@ -162,22 +162,97 @@ export class PaymentsService {
   /**
    * Handle webhook from MercadoPago
    */
-  async handleWebhook(data: any): Promise<void> {
-    // TODO: Implement webhook handling
-    console.log('Webhook received:', data);
+  async handleWebhook(data: any, signature?: string): Promise<void> {
+    if (signature) {
+      const isValid = this.validateWebhookSignature(data, signature);
+      if (!isValid) {
+        throw new HttpException('Invalid webhook signature', HttpStatus.UNAUTHORIZED);
+      }
+    }
 
-    // Validate signature
-    // const isValid = this.mercadopagoService.validateWebhookSignature(
-    //   data.signature,
-    //   data.body,
-    // );
+    const { id, status, external_reference } = data;
 
-    // if (!isValid) {
-    //   throw new HttpException('Invalid webhook signature', HttpStatus.UNAUTHORIZED);
-    // }
+    if (!id || !status) {
+      throw new HttpException('Invalid webhook data', HttpStatus.BAD_REQUEST);
+    }
 
-    // Update payment status based on webhook data
-    // This is a mock implementation
+    const payment = await this.paymentRepository.findOne({
+      where: { externalId: id },
+    });
+
+    if (!payment) {
+      throw new HttpException('Payment not found', HttpStatus.NOT_FOUND);
+    }
+
+    const statusMap: Record<string, PaymentStatus> = {
+      approved: PaymentStatus.COMPLETED,
+      pending: PaymentStatus.PROCESSING,
+      rejected: PaymentStatus.FAILED,
+      cancelled: PaymentStatus.CANCELLED,
+      refunded: PaymentStatus.REFUNDED,
+    };
+
+    const newStatus = statusMap[status] || PaymentStatus.FAILED;
+    payment.status = newStatus;
+    await this.paymentRepository.save(payment);
+
+    if (newStatus === PaymentStatus.COMPLETED) {
+      await this.paymentsProducer.publishPaymentCompleted({
+        id: payment.id,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        transactionId: payment.transactionId,
+      });
+    } else if (newStatus === PaymentStatus.FAILED) {
+      await this.paymentsProducer.publishPaymentFailed({
+        id: payment.id,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        reason: 'Webhook status update',
+      });
+    }
+  }
+
+  async refundPaymentWithReason(id: string, reason: string): Promise<PaymentResponseDto> {
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+
+    if (!payment) {
+      throw new HttpException('Payment not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (payment.status !== PaymentStatus.COMPLETED) {
+      throw new HttpException(
+        'Only completed payments can be refunded',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      await this.mercadopagoService.refundPayment(payment.externalId);
+      payment.status = PaymentStatus.REFUNDED;
+      payment.failureReason = reason;
+      await this.paymentRepository.save(payment);
+
+      await this.paymentsProducer.publishPaymentRefunded({
+        id: payment.id,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        reason,
+      });
+
+      return this.mapToDto(payment);
+    } catch (error) {
+      throw new HttpException(
+        `Refund failed: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private validateWebhookSignature(data: any, signature: string): boolean {
+    // TODO: Implement actual signature validation using MercadoPago's public key
+    // This is a placeholder implementation
+    return true;
   }
 
   private mapToDto(payment: PaymentEntity): PaymentResponseDto {

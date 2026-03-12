@@ -213,4 +213,82 @@ describe('InventoryService', () => {
       await expect(service.deleteItem('non-existent')).rejects.toThrow(HttpException);
     });
   });
+
+  describe('checkStockLevels', () => {
+    it('should return low stock status when quantity is below minimum', async () => {
+      const itemId = 'item-123';
+      const item = {
+        id: itemId,
+        productId: 'prod-123',
+        quantity: 5,
+        minQuantity: 10,
+        maxQuantity: 500,
+      };
+
+      mockRepository.findOne.mockResolvedValue(item);
+
+      const result = await service.checkStockLevels(itemId);
+
+      expect(result.isLowStock).toBe(true);
+      expect(result.quantity).toBe(5);
+      expect(result.minQuantity).toBe(10);
+      expect(mockProducer.publishLowStockAlert).toHaveBeenCalled();
+    });
+
+    it('should return normal stock status when quantity is above minimum', async () => {
+      const itemId = 'item-123';
+      const item = {
+        id: itemId,
+        productId: 'prod-123',
+        quantity: 100,
+        minQuantity: 10,
+        maxQuantity: 500,
+      };
+
+      mockRepository.findOne.mockResolvedValue(item);
+
+      const result = await service.checkStockLevels(itemId);
+
+      expect(result.isLowStock).toBe(false);
+      expect(result.quantity).toBe(100);
+      expect(mockProducer.publishLowStockAlert).not.toHaveBeenCalled();
+    });
+
+    it('should throw NOT_FOUND when item does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.checkStockLevels('non-existent')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('checkReorderPoints', () => {
+    it('should return items that need reordering', async () => {
+      const items = [
+        { id: 'item-1', productId: 'prod-1', quantity: 5, minQuantity: 10, maxQuantity: 100 },
+        { id: 'item-2', productId: 'prod-2', quantity: 50, minQuantity: 10, maxQuantity: 100 },
+      ];
+
+      mockRepository.find.mockResolvedValue(items);
+
+      const result = await service.checkReorderPoints();
+
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe('item-1');
+      expect(result[0].reorderQuantity).toBe(95);
+      expect(mockProducer.publishLowStockAlert).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no items need reordering', async () => {
+      const items = [
+        { id: 'item-1', productId: 'prod-1', quantity: 50, minQuantity: 10, maxQuantity: 100 },
+      ];
+
+      mockRepository.find.mockResolvedValue(items);
+
+      const result = await service.checkReorderPoints();
+
+      expect(result.length).toBe(0);
+      expect(mockProducer.publishLowStockAlert).not.toHaveBeenCalled();
+    });
+  });
 });

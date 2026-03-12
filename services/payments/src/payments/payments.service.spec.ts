@@ -216,4 +216,81 @@ describe('PaymentsService', () => {
       await expect(service.refundPayment(paymentId)).rejects.toThrow(HttpException);
     });
   });
+
+  describe('handleWebhook', () => {
+    it('should update payment status from webhook', async () => {
+      const webhookData = {
+        id: 'mp-123',
+        status: 'approved',
+        external_reference: 'order-123',
+      };
+
+      const existingPayment = {
+        id: 'payment-123',
+        orderId: 'order-123',
+        status: PaymentStatus.PROCESSING,
+        externalId: 'mp-123',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingPayment);
+      mockRepository.save.mockResolvedValue({ ...existingPayment, status: PaymentStatus.COMPLETED });
+
+      await service.handleWebhook(webhookData);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { externalId: 'mp-123' } });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishPaymentCompleted).toHaveBeenCalled();
+    });
+
+    it('should throw error for invalid webhook signature', async () => {
+      const webhookData = { id: 'mp-123', status: 'approved' };
+      const invalidSignature = 'invalid-sig';
+
+      await expect(service.handleWebhook(webhookData, invalidSignature)).rejects.toThrow(HttpException);
+    });
+
+    it('should throw error when payment not found in webhook', async () => {
+      const webhookData = { id: 'mp-999', status: 'approved' };
+
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.handleWebhook(webhookData)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('refundPaymentWithReason', () => {
+    it('should refund payment with reason', async () => {
+      const paymentId = 'payment-123';
+      const reason = 'Customer requested refund';
+      const existingPayment = {
+        id: paymentId,
+        orderId: 'order-123',
+        status: PaymentStatus.COMPLETED,
+        externalId: 'mp-123',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingPayment);
+      mockRepository.save.mockResolvedValue({ ...existingPayment, status: PaymentStatus.REFUNDED, failureReason: reason });
+
+      const result = await service.refundPaymentWithReason(paymentId, reason);
+
+      expect(result).toBeDefined();
+      expect(mockMercadopagoService.refundPayment).toHaveBeenCalledWith('mp-123');
+      expect(mockProducer.publishPaymentRefunded).toHaveBeenCalled();
+    });
+
+    it('should throw error when refund fails', async () => {
+      const paymentId = 'payment-123';
+      const existingPayment = {
+        id: paymentId,
+        status: PaymentStatus.COMPLETED,
+        externalId: 'mp-123',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingPayment);
+      mockMercadopagoService.refundPayment.mockRejectedValue(new Error('Refund failed'));
+
+      await expect(service.refundPaymentWithReason(paymentId, 'Test reason')).rejects.toThrow(HttpException);
+    });
+  });
 });

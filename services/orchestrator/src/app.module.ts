@@ -6,6 +6,11 @@ import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { BusinessModule } from './business/business.module';
+import { PaymentsModule } from './payments/payments.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { FiscalModule } from './fiscal/fiscal.module';
+import { OcrModule } from './ocr/ocr.module';
+import { MonolithModule } from './monolith/monolith.module';
 
 @Module({
   imports: [
@@ -17,6 +22,11 @@ import { BusinessModule } from './business/business.module';
     AuthModule,
     OrdersModule,
     BusinessModule,
+    PaymentsModule,
+    DeliveryModule,
+    FiscalModule,
+    OcrModule,
+    MonolithModule,
   ],
   controllers: [AppController],
   providers: [AppService],

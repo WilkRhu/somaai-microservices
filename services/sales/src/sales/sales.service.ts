@@ -92,19 +92,72 @@ export class SalesService {
     return this.mapToDto(sale);
   }
 
-  async deleteSale(id: string): Promise<void> {
+  async calculateDiscount(id: string, discountPercentage: number): Promise<SaleResponseDto> {
     const sale = await this.saleRepository.findOne({ where: { id } });
 
     if (!sale) {
       throw new HttpException('Sale not found', HttpStatus.NOT_FOUND);
     }
 
-    await this.saleRepository.remove(sale);
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      throw new HttpException('Discount percentage must be between 0 and 100', HttpStatus.BAD_REQUEST);
+    }
 
-    await this.salesProducer.publishSaleCancelled({
+    const discountAmount = (sale.totalAmount * discountPercentage) / 100;
+    sale.totalAmount = sale.totalAmount - discountAmount;
+    sale.discountApplied = discountPercentage;
+
+    await this.saleRepository.save(sale);
+
+    await this.salesProducer.publishSaleUpdated({
       id: sale.id,
       customerId: sale.customerId,
+      totalAmount: sale.totalAmount,
+      status: sale.status,
     });
+
+    return this.mapToDto(sale);
+  }
+
+  async updateSaleStatus(id: string, newStatus: SaleStatus): Promise<SaleResponseDto> {
+    const sale = await this.saleRepository.findOne({ where: { id } });
+
+    if (!sale) {
+      throw new HttpException('Sale not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (!this.isValidStatusTransition(sale.status, newStatus)) {
+      throw new HttpException(
+        `Invalid status transition from ${sale.status} to ${newStatus}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    sale.status = newStatus;
+    await this.saleRepository.save(sale);
+
+    await this.salesProducer.publishSaleUpdated({
+      id: sale.id,
+      customerId: sale.customerId,
+      totalAmount: sale.totalAmount,
+      status: sale.status,
+    });
+
+    return this.mapToDto(sale);
+  }
+
+  private isValidStatusTransition(from: SaleStatus, to: SaleStatus): boolean {
+    const validTransitions: Record<SaleStatus, SaleStatus[]> = {
+      [SaleStatus.PENDING]: [SaleStatus.CONFIRMED, SaleStatus.CANCELLED],
+      [SaleStatus.CONFIRMED]: [SaleStatus.PROCESSING, SaleStatus.CANCELLED],
+      [SaleStatus.PROCESSING]: [SaleStatus.COMPLETED, SaleStatus.FAILED],
+      [SaleStatus.COMPLETED]: [SaleStatus.REFUNDED],
+      [SaleStatus.FAILED]: [SaleStatus.PENDING],
+      [SaleStatus.CANCELLED]: [],
+      [SaleStatus.REFUNDED]: [],
+    };
+
+    return validTransitions[from]?.includes(to) ?? false;
   }
 
   private mapToDto(sale: SaleEntity): SaleResponseDto {

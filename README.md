@@ -1,182 +1,113 @@
-# SomaAI Microservices Architecture
+# SomaAI Microservices
 
-Arquitetura de microserviços com Kafka para o projeto SomaAI.
-
-## 🏗️ Estrutura do Projeto
-
-```
-somaai-microservices/
-├── docker-compose.yml          # Orquestração de containers
-├── .env.example                # Variáveis de ambiente
-├── README.md                   # Este arquivo
-├── docs/                       # Documentação
-│   ├── ARCHITECTURE.md
-│   ├── KAFKA_GUIDE.md
-│   ├── DEPLOYMENT.md
-│   └── TROUBLESHOOTING.md
-├── nginx/                      # Configuração Nginx
-│   ├── nginx.conf
-│   └── conf.d/
-│       └── default.conf
-├── mysql/                      # Configuração MySQL
-│   ├── master.cnf
-│   └── replica.cnf
-├── prometheus/                 # Monitoramento
-│   ├── prometheus.yml
-│   └── alerting-rules.yml
-├── logstash/                   # Logging
-│   └── logstash.conf
-├── services/                   # Microserviços
-│   ├── monolith/              # Core (Auth, Users, Subscriptions)
-│   ├── sales/                 # Sales Service
-│   ├── inventory/             # Inventory Service
-│   ├── delivery/              # Delivery Service
-│   ├── suppliers/             # Suppliers Service
-│   └── offers/                # Offers Service
-└── scripts/                    # Scripts úteis
-    ├── setup.sh
-    ├── start.sh
-    ├── stop.sh
-    ├── logs.sh
-    └── health-check.sh
-```
+Plataforma de microserviços para gerenciamento de vendas, inventário, entrega e operações fiscais.
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Clone este repositório
-git clone <repo> somaai-microservices
-cd somaai-microservices
+# Instalar dependências
+npm install
 
-# 2. Configure variáveis de ambiente
-cp .env.example .env
+# Iniciar todos os serviços
+./scripts/start-all-services.ps1  # Windows
+./scripts/start-all-services.sh   # Linux/Mac
 
-# 3. Inicie os serviços
-./scripts/start.sh
-
-# 4. Verifique saúde
-./scripts/health-check.sh
-
-# 5. Acesse os serviços
-# Nginx: http://localhost
-# Kafka UI: http://localhost:8080
-# Grafana: http://localhost:3100
-# Kibana: http://localhost:5601
-```
-
-## 📡 Serviços Disponíveis
-
-| Serviço | Porta | Descrição |
-|---------|-------|-----------|
-| Nginx | 80 | Reverse Proxy |
-| Monolith | 3000 | Core (Auth, Users) |
-| Sales | 3001 | Vendas/POS |
-| Inventory | 3002 | Estoque |
-| Delivery | 3003 | Entregas |
-| Suppliers | 3004 | Fornecedores |
-| Offers | 3005 | Promoções |
-| Kafka UI | 8080 | Visualização Kafka |
-| Prometheus | 9090 | Métricas |
-| Grafana | 3100 | Dashboards |
-| Kibana | 5601 | Logs |
-
-## 🔄 Fluxo de Venda
-
-```
-Cliente compra
-    ↓
-Sales Service cria venda
-    ↓
-Publica: sale.created
-    ├→ Inventory Service: atualiza estoque
-    ├→ Delivery Service: cria pedido de entrega
-    ├→ Fiscal Service: gera NFC-e
-    └→ Offers Service: valida promoções
+# Rodar testes
+npm run test
 ```
 
 ## 📚 Documentação
 
-- [Arquitetura](docs/ARCHITECTURE.md)
-- [Guia Kafka](docs/KAFKA_GUIDE.md)
-- [Deployment](docs/DEPLOYMENT.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+Toda a documentação está em `/docs`:
 
-## 🛠️ Desenvolvimento
+- **[START_HERE.md](docs/START_HERE.md)** - Comece aqui! Setup em 10 minutos
+- **[IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md)** - Status do projeto
+- **[NEXT_PRIORITIES.md](docs/NEXT_PRIORITIES.md)** - Próximas prioridades
+- **[WHAT_IS_MISSING_UPDATED.md](docs/WHAT_IS_MISSING_UPDATED.md)** - O que ainda falta
 
-### Adicionar novo serviço
+## 📊 Status do Projeto
 
-```bash
-# 1. Criar pasta
-mkdir services/novo-servico
+```
+Phase 1 (Fundação)    ████████████████████ 100% ✅
+Phase 2 (Qualidade)   ███████████░░░░░░░░░░  75% ✅⏳
+Phase 3 (Features)    ░░░░░░░░░░░░░░░░░░░░░   0% ⏳
+Phase 4 (Polish)      ░░░░░░░░░░░░░░░░░░░░░   0% ⏳
 
-# 2. Copiar template
-cp services/sales/* services/novo-servico/
-
-# 3. Atualizar docker-compose.yml
-# 4. Atualizar nginx.conf
-# 5. Rodar: docker-compose up -d novo-servico
+OVERALL               ███████████░░░░░░░░░░  80%
 ```
 
-### Testar evento Kafka
+## 🏗️ Arquitetura
 
-```bash
-# Ver topics
-docker exec kafka-1 kafka-topics.sh --list --bootstrap-server localhost:9092
-
-# Consumir mensagens
-docker exec kafka-1 kafka-console-consumer.sh \
-  --bootstrap-server localhost:9092 \
-  --topic sale.created \
-  --from-beginning
+```
+Frontend (Port 3000)
+        ↓
+Orchestrator (Port 3009)
+        ↓
+┌───────┬───────┬───────┐
+│       │       │       │
+Auth    Monolith Business
+3010    3001    3011
+│       │       │
+└───────┴───────┴───────┘
+        ↓
+      MySQL
 ```
 
-## 📊 Monitoramento
+## 🔑 Serviços
 
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3100 (admin/admin)
-- **Kibana**: http://localhost:5601
-- **Kafka UI**: http://localhost:8080
+- **Auth** - Autenticação JWT e Google OAuth
+- **Monolith** - Usuários e Produtos
+- **Business** - Operações de negócio
+- **Orchestrator** - API Gateway
+- **Sales** - Gerenciamento de vendas
+- **Inventory** - Controle de estoque
+- **Delivery** - Rastreamento de entregas
+- **Suppliers** - Gerenciamento de fornecedores
+- **Offers** - Promoções e ofertas
+- **Fiscal** - Emissão de NFC-e
+- **OCR** - Processamento de documentos
+- **Payments** - Processamento de pagamentos
 
-## 🔐 Segurança
-
-- Variáveis sensíveis em `.env` (não commitar)
-- JWT para autenticação entre serviços
-- TLS para Kafka em produção
-- Network isolation com Docker
-
-## 📝 Logs
-
-```bash
-# Ver logs de um serviço
-docker-compose logs -f sales-service
-
-# Ver logs de todos
-docker-compose logs -f
-
-# Últimas 100 linhas
-docker-compose logs --tail=100 sales-service
-```
-
-## 🆘 Troubleshooting
+## 🧪 Testes
 
 ```bash
-# Verificar saúde
-./scripts/health-check.sh
+# Testes unitários
+npm run test
 
-# Reiniciar um serviço
-docker-compose restart sales-service
+# Testes com cobertura
+npm run test:cov
 
-# Rebuild
-docker-compose up -d --build sales-service
+# Testes de integração
+npm run test:integration
 
-# Ver detalhes de erro
-docker-compose logs sales-service | grep ERROR
+# Testes E2E
+npm run test:e2e
 ```
 
-## 📞 Suporte
+## 📖 Documentação Completa
 
-Para dúvidas ou problemas, consulte a [documentação de troubleshooting](docs/TROUBLESHOOTING.md).
+Veja a pasta `/docs` para documentação detalhada:
 
-## 📄 Licença
+- Guias de setup
+- Arquitetura do sistema
+- Documentação de APIs
+- Guias de troubleshooting
+- Relatórios de progresso
 
-Proprietary - SomaAI
+## 🤝 Contribuindo
+
+1. Crie uma branch para sua feature
+2. Commit suas mudanças
+3. Push para a branch
+4. Abra um Pull Request
+
+## 📝 Licença
+
+MIT
+
+---
+
+**Última atualização**: March 12, 2026  
+**Status**: 80% Completo  
+**Próximo passo**: Testes de Integração
+

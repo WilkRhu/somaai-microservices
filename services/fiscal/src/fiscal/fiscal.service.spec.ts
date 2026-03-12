@@ -200,4 +200,113 @@ describe('FiscalService', () => {
       await expect(service.cancelNfce(nfceId, 'reason')).rejects.toThrow(HttpException);
     });
   });
+
+  describe('signNfceXml', () => {
+    it('should sign NFC-e XML successfully', async () => {
+      const nfceId = 'nfce-123';
+      const certificatePath = '/path/to/cert.pfx';
+      const existingNfce = {
+        id: nfceId,
+        establishmentId: 'est-123',
+        status: NfceStatus.PENDING,
+        xmlContent: '<xml></xml>',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+      mockRepository.save.mockResolvedValue({ ...existingNfce, status: NfceStatus.PROCESSING, xmlContent: '<signed-xml></signed-xml>' });
+
+      const result = await service.signNfceXml(nfceId, certificatePath);
+
+      expect(result).toBeDefined();
+      expect(mockXmlSignerService.signXml).toHaveBeenCalledWith('<xml></xml>', certificatePath);
+      expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw error when trying to sign non-pending NFC-e', async () => {
+      const nfceId = 'nfce-123';
+      const existingNfce = {
+        id: nfceId,
+        status: NfceStatus.AUTHORIZED,
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+
+      await expect(service.signNfceXml(nfceId, '/path/to/cert')).rejects.toThrow(HttpException);
+    });
+
+    it('should throw error when signing fails', async () => {
+      const nfceId = 'nfce-123';
+      const existingNfce = {
+        id: nfceId,
+        status: NfceStatus.PENDING,
+        xmlContent: '<xml></xml>',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+      mockXmlSignerService.signXml.mockRejectedValue(new Error('Signing failed'));
+
+      await expect(service.signNfceXml(nfceId, '/path/to/cert')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('authorizeNfce', () => {
+    it('should authorize a processing NFC-e', async () => {
+      const nfceId = 'nfce-123';
+      const existingNfce = {
+        id: nfceId,
+        establishmentId: 'est-123',
+        number: 1,
+        series: 1,
+        totalValue: 100.0,
+        status: NfceStatus.PROCESSING,
+        xmlContent: '<signed-xml></signed-xml>',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+      mockRepository.save.mockResolvedValue({
+        ...existingNfce,
+        status: NfceStatus.AUTHORIZED,
+        protocolNumber: 'PROTO-123',
+        authorizationCode: 'AUTH-123',
+      });
+
+      const result = await service.authorizeNfce(nfceId);
+
+      expect(result).toBeDefined();
+      expect(mockSefazService.authorizeNfce).toHaveBeenCalledWith('<signed-xml></signed-xml>');
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockProducer.publishNfceIssued).toHaveBeenCalled();
+    });
+
+    it('should throw error when trying to authorize non-processing NFC-e', async () => {
+      const nfceId = 'nfce-123';
+      const existingNfce = {
+        id: nfceId,
+        status: NfceStatus.PENDING,
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+
+      await expect(service.authorizeNfce(nfceId)).rejects.toThrow(HttpException);
+    });
+
+    it('should handle authorization failure', async () => {
+      const nfceId = 'nfce-123';
+      const existingNfce = {
+        id: nfceId,
+        establishmentId: 'est-123',
+        number: 1,
+        series: 1,
+        status: NfceStatus.PROCESSING,
+        xmlContent: '<signed-xml></signed-xml>',
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingNfce);
+      mockSefazService.authorizeNfce.mockRejectedValue(new Error('Authorization failed'));
+      mockRepository.save.mockResolvedValue({ ...existingNfce, status: NfceStatus.FAILED });
+
+      await expect(service.authorizeNfce(nfceId)).rejects.toThrow(HttpException);
+      expect(mockProducer.publishNfceFailed).toHaveBeenCalled();
+    });
+  });
 });

@@ -110,6 +110,59 @@ export class InventoryService {
     await this.itemRepository.remove(item);
   }
 
+  async checkStockLevels(itemId: string): Promise<{ isLowStock: boolean; quantity: number; minQuantity: number }> {
+    const item = await this.itemRepository.findOne({ where: { id: itemId } });
+
+    if (!item) {
+      throw new HttpException('Inventory item not found', HttpStatus.NOT_FOUND);
+    }
+
+    const isLowStock = item.quantity < item.minQuantity;
+
+    if (isLowStock) {
+      await this.inventoryProducer.publishLowStockAlert({
+        id: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        minQuantity: item.minQuantity,
+      });
+    }
+
+    return {
+      isLowStock,
+      quantity: item.quantity,
+      minQuantity: item.minQuantity,
+    };
+  }
+
+  async checkReorderPoints(): Promise<any[]> {
+    const items = await this.itemRepository.find();
+    const reorderItems = [];
+
+    for (const item of items) {
+      if (item.quantity <= item.minQuantity) {
+        const reorderQuantity = item.maxQuantity - item.quantity;
+        reorderItems.push({
+          id: item.id,
+          productId: item.productId,
+          currentQuantity: item.quantity,
+          reorderQuantity,
+          minQuantity: item.minQuantity,
+          maxQuantity: item.maxQuantity,
+        });
+
+        await this.inventoryProducer.publishLowStockAlert({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          minQuantity: item.minQuantity,
+        });
+      }
+    }
+
+    return reorderItems;
+  }
+
   private mapToDto(item: InventoryItemEntity): InventoryItemResponseDto {
     return {
       id: item.id,
