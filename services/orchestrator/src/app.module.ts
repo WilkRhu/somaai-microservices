@@ -11,6 +11,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { FiscalModule } from './fiscal/fiscal.module';
 import { OcrModule } from './ocr/ocr.module';
 import { MonolithModule } from './monolith/monolith.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MonolithModule } from './monolith/monolith.module';
     FiscalModule,
     OcrModule,
     MonolithModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
