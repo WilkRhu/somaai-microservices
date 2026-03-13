@@ -119,6 +119,23 @@ export class SalesService {
     return this.mapToDto(sale);
   }
 
+  async deleteSale(id: string): Promise<void> {
+    const sale = await this.saleRepository.findOne({ where: { id } });
+
+    if (!sale) {
+      throw new HttpException('Sale not found', HttpStatus.NOT_FOUND);
+    }
+
+    await this.saleRepository.remove(sale);
+
+    await this.salesProducer.publishSaleCancelled({
+      id: sale.id,
+      customerId: sale.customerId,
+      totalAmount: sale.totalAmount,
+      status: sale.status,
+    });
+  }
+
   async updateSaleStatus(id: string, newStatus: SaleStatus): Promise<SaleResponseDto> {
     const sale = await this.saleRepository.findOne({ where: { id } });
 

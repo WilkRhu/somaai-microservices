@@ -3,8 +3,11 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 export enum SaleStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
 }
 
 @Entity('sales')

@@ -1,6 +1,15 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
+
+interface InventoryItem {
+  productId: string;
+  quantity: number;
+  [key: string]: unknown;
+}
+
+type BusinessResponse = Record<string, unknown>;
 
 @Injectable()
 export class CrossServiceValidator {
@@ -8,11 +17,12 @@ export class CrossServiceValidator {
 
   async validateInventoryForSale(saleItems: any[]): Promise<boolean> {
     try {
-      const inventoryServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
+      const inventoryServiceUrl =
+        process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
 
       for (const item of saleItems) {
-        const response = await firstValueFrom(
-          this.httpService.get(
+        const response: AxiosResponse<InventoryItem> = await firstValueFrom(
+          this.httpService.get<InventoryItem>(
             `${inventoryServiceUrl}/api/inventory/${item.productId}`,
           ),
         );
@@ -33,8 +43,9 @@ export class CrossServiceValidator {
         throw error;
       }
 
+      const message = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Failed to validate inventory: ${error.message}`,
+        `Failed to validate inventory: ${message}`,
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
@@ -42,10 +53,11 @@ export class CrossServiceValidator {
 
   async validateCustomerExists(customerId: string): Promise<boolean> {
     try {
-      const businessServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
+      const businessServiceUrl =
+        process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
 
-      const response = await firstValueFrom(
-        this.httpService.get(
+      const response: AxiosResponse<BusinessResponse> = await firstValueFrom(
+        this.httpService.get<BusinessResponse>(
           `${businessServiceUrl}/api/customers/${customerId}`,
         ),
       );
@@ -63,8 +75,9 @@ export class CrossServiceValidator {
         throw error;
       }
 
+      const message = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Failed to validate customer: ${error.message}`,
+        `Failed to validate customer: ${message}`,
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
@@ -72,10 +85,11 @@ export class CrossServiceValidator {
 
   async validateOfferExists(offerId: string): Promise<boolean> {
     try {
-      const businessServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
+      const businessServiceUrl =
+        process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
 
-      const response = await firstValueFrom(
-        this.httpService.get(
+      const response: AxiosResponse<BusinessResponse> = await firstValueFrom(
+        this.httpService.get<BusinessResponse>(
           `${businessServiceUrl}/api/offers/${offerId}`,
         ),
       );
@@ -93,8 +107,9 @@ export class CrossServiceValidator {
         throw error;
       }
 
+      const message = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Failed to validate offer: ${error.message}`,
+        `Failed to validate offer: ${message}`,
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
