@@ -11,42 +11,42 @@ export enum NfceStatus {
 @Entity('nfces')
 export class NfceEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  establishmentId: string;
+  establishmentId!: string;
 
   @Column()
-  number: number;
+  number!: number;
 
   @Column()
-  series: number;
+  series!: number;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  totalValue: number;
+  totalValue!: number;
 
   @Column('text')
-  xmlContent: string;
+  xmlContent!: string;
 
   @Column({ nullable: true })
-  protocolNumber: string;
+  protocolNumber!: string;
 
   @Column({ nullable: true })
-  authorizationCode: string;
+  authorizationCode!: string;
 
   @Column({
     type: 'enum',
     enum: NfceStatus,
     default: NfceStatus.PENDING,
   })
-  status: NfceStatus;
+  status!: NfceStatus;
 
   @Column({ nullable: true })
-  rejectionReason: string;
+  rejectionReason!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

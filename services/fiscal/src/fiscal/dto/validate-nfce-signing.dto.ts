@@ -2,10 +2,10 @@ import { IsString, IsUUID, IsOptional } from 'class-validator';
 
 export class ValidateNfceSigningDto {
   @IsUUID()
-  nfceId: string;
+  nfceId!: string;
 
   @IsString()
-  certificatePath: string;
+  certificatePath!: string;
 
   @IsString()
   @IsOptional()

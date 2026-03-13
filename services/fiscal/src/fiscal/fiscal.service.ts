@@ -67,15 +67,16 @@ export class FiscalService {
       return this.mapToDto(nfce);
     } catch (error) {
       // Publish failure event
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await this.fiscalProducer.publishNfceFailed({
         establishmentId: dto.establishmentId,
         number: dto.number,
         series: dto.series,
-        error: error.message,
+        error: errorMessage,
       });
 
       throw new HttpException(
-        `Failed to generate NFC-e: ${error.message}`,
+        `Failed to generate NFC-e: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -128,7 +129,7 @@ export class FiscalService {
       nfce.status = NfceStatus.CANCELLED;
       await this.nfceRepository.save(nfce);
 
-      await this.fiscalProducer.publishNfceCancelled({
+      await this.fiscalProducer.publishNfceFailed({
         id: nfce.id,
         establishmentId: nfce.establishmentId,
         number: nfce.number,
@@ -138,8 +139,9 @@ export class FiscalService {
 
       return this.mapToDto(nfce);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Failed to cancel NFC-e: ${error.message}`,
+        `Failed to cancel NFC-e: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -167,8 +169,9 @@ export class FiscalService {
 
       return this.mapToDto(nfce);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Failed to sign NFC-e XML: ${error.message}`,
+        `Failed to sign NFC-e XML: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -207,19 +210,20 @@ export class FiscalService {
 
       return this.mapToDto(nfce);
     } catch (error) {
-      nfce.status = NfceStatus.FAILED;
-      nfce.rejectionReason = error.message;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      nfce.status = NfceStatus.REJECTED;
+      nfce.rejectionReason = errorMessage;
       await this.nfceRepository.save(nfce);
 
       await this.fiscalProducer.publishNfceFailed({
         establishmentId: nfce.establishmentId,
         number: nfce.number,
         series: nfce.series,
-        error: error.message,
+        error: errorMessage,
       });
 
       throw new HttpException(
-        `Failed to authorize NFC-e: ${error.message}`,
+        `Failed to authorize NFC-e: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }

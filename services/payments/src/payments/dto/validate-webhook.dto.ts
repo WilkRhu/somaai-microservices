@@ -2,11 +2,11 @@ import { IsObject, IsString } from 'class-validator';
 
 export class ValidateWebhookDto {
   @IsString()
-  signature: string;
+  signature!: string;
 
   @IsObject()
-  data: any;
+  data!: any;
 
   @IsString()
-  timestamp: string;
+  timestamp!: string;
 }

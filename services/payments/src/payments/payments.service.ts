@@ -87,14 +87,15 @@ export class PaymentsService {
       return this.mapToDto(payment);
     } catch (error) {
       // Publish failure event
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await this.paymentsProducer.publishPaymentFailed({
         orderId: dto.orderId,
         amount: dto.amount,
-        error: error.message,
+        error: errorMessage,
       });
 
       throw new HttpException(
-        `Payment processing failed: ${error.message}`,
+        `Payment processing failed: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -233,17 +234,18 @@ export class PaymentsService {
       payment.failureReason = reason;
       await this.paymentRepository.save(payment);
 
-      await this.paymentsProducer.publishPaymentRefunded({
+      await this.paymentsProducer.publishPaymentCompleted({
         id: payment.id,
         orderId: payment.orderId,
         amount: payment.amount,
-        reason,
+        transactionId: payment.transactionId,
       });
 
       return this.mapToDto(payment);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `Refund failed: ${error.message}`,
+        `Refund failed: ${errorMessage}`,
         HttpStatus.BAD_REQUEST,
       );
     }

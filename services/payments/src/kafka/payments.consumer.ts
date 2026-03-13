@@ -3,8 +3,8 @@ import { Kafka, Consumer } from 'kafkajs';
 
 @Injectable()
 export class PaymentsConsumerService implements OnModuleInit, OnModuleDestroy {
-  private kafka: Kafka;
-  private consumer: Consumer;
+  private kafka!: Kafka;
+  private consumer!: Consumer;
   private readonly logger = new Logger(PaymentsConsumerService.name);
 
   async onModuleInit() {
@@ -31,14 +31,14 @@ export class PaymentsConsumerService implements OnModuleInit, OnModuleDestroy {
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         try {
-          const data = JSON.parse(message.value.toString());
+          const data = JSON.parse(message.value?.toString() || '{}');
           this.logger.log(`Received message from topic ${topic}: ${JSON.stringify(data)}`);
 
           if (topic === 'order.created') {
             await this.handleOrderCreated(data);
           }
         } catch (error) {
-          this.logger.error(`Error processing message: ${error.message}`);
+          this.logger.error(`Error processing message: ${error instanceof Error ? error.message : String(error)}`);
         }
       },
     });

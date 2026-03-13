@@ -27,8 +27,9 @@ export class SefazService {
         authorizationCode,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `SEFAZ authorization failed: ${error.message}`,
+        `SEFAZ authorization failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -51,8 +52,9 @@ export class SefazService {
         authorizationCode: this.generateAuthCode(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `SEFAZ query failed: ${error.message}`,
+        `SEFAZ query failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -67,8 +69,9 @@ export class SefazService {
       console.log('Cancelling NFC-e with protocol:', protocolNumber);
       return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `SEFAZ cancellation failed: ${error.message}`,
+        `SEFAZ cancellation failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }

@@ -3,8 +3,8 @@ import { Kafka, Producer } from 'kafkajs';
 
 @Injectable()
 export class PaymentsProducerService implements OnModuleInit, OnModuleDestroy {
-  private kafka: Kafka;
-  private producer: Producer;
+  private kafka!: Kafka;
+  private producer!: Producer;
 
   constructor() {
     this.kafka = new Kafka({

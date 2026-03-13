@@ -5,26 +5,26 @@ export class OcrResponseDto {
     example: 'ocr-uuid-123',
     description: 'OCR processing ID',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     example: 'invoice_2026_03_12.jpg',
     description: 'File name of the image',
   })
-  fileName: string;
+  fileName!: string;
 
   @ApiProperty({
     example: 'nfce',
     description: 'Document type',
   })
-  documentType: string;
+  documentType!: string;
 
   @ApiProperty({
     example: 'COMPLETED',
     description: 'Processing status',
     enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'],
   })
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional({
     example: 'NFC-e number: 123456, Date: 2026-03-12',
@@ -60,13 +60,13 @@ export class OcrResponseDto {
     example: '2026-03-12T10:00:00Z',
     description: 'Creation date',
   })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     example: '2026-03-12T10:00:00Z',
     description: 'Last update date',
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ApiPropertyOptional({
     example: '2026-03-12T10:05:00Z',

@@ -8,7 +8,7 @@ export class ProcessImageDto {
   })
   @IsNotEmpty()
   @IsString()
-  fileName: string;
+  fileName!: string;
 
   @ApiProperty({
     example: 'nfce',
@@ -17,7 +17,7 @@ export class ProcessImageDto {
   })
   @IsNotEmpty()
   @IsString()
-  documentType: string;
+  documentType!: string;
 
   @ApiProperty({
     example: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -25,7 +25,7 @@ export class ProcessImageDto {
   })
   @IsNotEmpty()
   @IsString()
-  imageBase64: string;
+  imageBase64!: string;
 
   @ApiPropertyOptional({
     example: 'sale-uuid-123',

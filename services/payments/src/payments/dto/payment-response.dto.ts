@@ -5,32 +5,32 @@ export class PaymentResponseDto {
     example: 'payment-uuid-123',
     description: 'Payment ID',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     example: 'order-uuid-123',
     description: 'Order ID',
   })
-  orderId: string;
+  orderId!: string;
 
   @ApiProperty({
     example: 250.50,
     description: 'Payment amount',
   })
-  amount: number;
+  amount!: number;
 
   @ApiProperty({
     example: 'COMPLETED',
     description: 'Payment status',
     enum: ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'],
   })
-  status: string;
+  status!: string;
 
   @ApiProperty({
     example: 'credit_card',
     description: 'Payment method',
   })
-  paymentMethod: string;
+  paymentMethod!: string;
 
   @ApiPropertyOptional({
     example: 'txn_123456789',
@@ -48,11 +48,11 @@ export class PaymentResponseDto {
     example: '2026-03-12T10:00:00Z',
     description: 'Creation date',
   })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     example: '2026-03-12T10:00:00Z',
     description: 'Last update date',
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

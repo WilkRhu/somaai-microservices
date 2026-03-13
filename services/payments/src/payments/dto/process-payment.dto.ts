@@ -8,7 +8,7 @@ export class ProcessPaymentDto {
   })
   @IsNotEmpty()
   @IsString()
-  orderId: string;
+  orderId!: string;
 
   @ApiProperty({
     example: 250.50,
@@ -16,7 +16,7 @@ export class ProcessPaymentDto {
   })
   @IsNotEmpty()
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @ApiProperty({
     example: 'credit_card',
@@ -25,7 +25,7 @@ export class ProcessPaymentDto {
   })
   @IsNotEmpty()
   @IsString()
-  paymentMethod: string;
+  paymentMethod!: string;
 
   @ApiPropertyOptional({
     example: 'Payment for order #123',

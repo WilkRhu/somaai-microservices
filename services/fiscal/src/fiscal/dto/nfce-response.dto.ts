@@ -5,38 +5,38 @@ export class NfceResponseDto {
     example: 'nfce-uuid-123',
     description: 'NFC-e ID',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     example: 'establishment-uuid-123',
     description: 'Establishment ID',
   })
-  establishmentId: string;
+  establishmentId!: string;
 
   @ApiProperty({
     example: 1,
     description: 'NFC-e number',
   })
-  number: number;
+  number!: number;
 
   @ApiProperty({
     example: 1,
     description: 'NFC-e series',
   })
-  series: number;
+  series!: number;
 
   @ApiProperty({
     example: 100.00,
     description: 'Total NFC-e value',
   })
-  totalValue: number;
+  totalValue!: number;
 
   @ApiProperty({
     example: 'AUTHORIZED',
     description: 'NFC-e status',
     enum: ['PENDING', 'AUTHORIZED', 'REJECTED', 'CANCELLED'],
   })
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional({
     example: '123456789012345',
@@ -60,11 +60,11 @@ export class NfceResponseDto {
     example: '2026-03-12T10:00:00Z',
     description: 'Creation date',
   })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     example: '2026-03-12T10:00:00Z',
     description: 'Last update date',
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

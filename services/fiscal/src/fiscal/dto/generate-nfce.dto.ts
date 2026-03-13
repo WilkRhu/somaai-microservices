@@ -8,7 +8,7 @@ export class NfceItemDto {
   })
   @IsNotEmpty()
   @IsString()
-  code: string;
+  code!: string;
 
   @ApiProperty({
     example: 'Product Description',
@@ -16,7 +16,7 @@ export class NfceItemDto {
   })
   @IsNotEmpty()
   @IsString()
-  description: string;
+  description!: string;
 
   @ApiProperty({
     example: 2,
@@ -24,7 +24,7 @@ export class NfceItemDto {
   })
   @IsNotEmpty()
   @IsNumber()
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({
     example: 50.00,
@@ -32,7 +32,7 @@ export class NfceItemDto {
   })
   @IsNotEmpty()
   @IsDecimal()
-  unitPrice: number;
+  unitPrice!: number;
 
   @ApiProperty({
     example: 100.00,
@@ -40,7 +40,7 @@ export class NfceItemDto {
   })
   @IsNotEmpty()
   @IsDecimal()
-  totalPrice: number;
+  totalPrice!: number;
 }
 
 export class GenerateNfceDto {
@@ -50,7 +50,7 @@ export class GenerateNfceDto {
   })
   @IsNotEmpty()
   @IsString()
-  establishmentId: string;
+  establishmentId!: string;
 
   @ApiProperty({
     example: 1,
@@ -58,7 +58,7 @@ export class GenerateNfceDto {
   })
   @IsNotEmpty()
   @IsNumber()
-  number: number;
+  number!: number;
 
   @ApiProperty({
     example: 1,
@@ -66,7 +66,7 @@ export class GenerateNfceDto {
   })
   @IsNotEmpty()
   @IsNumber()
-  series: number;
+  series!: number;
 
   @ApiProperty({
     example: [
@@ -76,7 +76,7 @@ export class GenerateNfceDto {
   })
   @IsNotEmpty()
   @IsArray()
-  items: NfceItemDto[];
+  items!: NfceItemDto[];
 
   @ApiProperty({
     example: 100.00,
@@ -84,7 +84,7 @@ export class GenerateNfceDto {
   })
   @IsNotEmpty()
   @IsDecimal()
-  totalValue: number;
+  totalValue!: number;
 
   @ApiPropertyOptional({
     example: '12345678901',

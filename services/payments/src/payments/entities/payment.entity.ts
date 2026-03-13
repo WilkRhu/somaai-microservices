@@ -12,45 +12,45 @@ export enum PaymentStatus {
 @Entity('payments')
 export class PaymentEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  orderId: string;
+  orderId!: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  amount: number;
+  amount!: number;
 
   @Column()
-  paymentMethod: string;
+  paymentMethod!: string;
 
   @Column({
     type: 'enum',
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
   })
-  status: PaymentStatus;
+  status!: PaymentStatus;
 
   @Column({ nullable: true })
-  transactionId: string;
+  transactionId!: string;
 
   @Column({ nullable: true })
-  externalId: string;
+  externalId!: string;
 
   @Column({ nullable: true })
-  description: string;
+  description!: string;
 
   @Column({ nullable: true })
-  customerEmail: string;
+  customerEmail!: string;
 
   @Column({ nullable: true })
-  customerName: string;
+  customerName!: string;
 
   @Column({ nullable: true })
-  failureReason: string;
+  failureReason!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

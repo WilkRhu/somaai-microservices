@@ -31,8 +31,9 @@ export class MercadopagoService {
         statusDetail: 'accredited',
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `MercadoPago payment creation failed: ${error.message}`,
+        `MercadoPago payment creation failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -54,8 +55,9 @@ export class MercadopagoService {
         statusDetail: 'accredited',
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `MercadoPago status query failed: ${error.message}`,
+        `MercadoPago status query failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
@@ -70,8 +72,9 @@ export class MercadopagoService {
       console.log('Refunding payment in MercadoPago:', paymentId);
       return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new HttpException(
-        `MercadoPago refund failed: ${error.message}`,
+        `MercadoPago refund failed: ${errorMessage}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
