@@ -4,7 +4,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json tsconfig.json tsconfig.build.json nest-cli.json* ./
-RUN npm install --legacy-peer-deps
+
+RUN npm config set fetch-timeout 120000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --legacy-peer-deps --no-audit --no-fund || \
+    npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY src ./src
 RUN npm run build --legacy-peer-deps
@@ -17,7 +22,12 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 COPY package*.json ./
-RUN npm install --legacy-peer-deps --only=production
+
+RUN npm config set fetch-timeout 120000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --legacy-peer-deps --omit=dev --no-audit --no-fund || \
+    npm install --legacy-peer-deps --omit=dev --no-audit --no-fund
 
 COPY --from=builder /app/dist ./dist
 

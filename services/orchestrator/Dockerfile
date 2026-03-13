@@ -7,7 +7,11 @@ COPY tsconfig.json ./
 COPY tsconfig.build.json ./
 COPY nest-cli.json ./
 
-RUN npm install --legacy-peer-deps
+RUN npm config set fetch-timeout 120000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --legacy-peer-deps --no-audit --no-fund || \
+    npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY src ./src
 
@@ -21,7 +25,11 @@ RUN apk add --no-cache curl python3 make g++
 
 COPY package*.json ./
 
-RUN npm install --legacy-peer-deps --production
+RUN npm config set fetch-timeout 120000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --legacy-peer-deps --omit=dev --no-audit --no-fund || \
+    npm install --legacy-peer-deps --omit=dev --no-audit --no-fund
 
 COPY --from=builder /app/dist ./dist
 
