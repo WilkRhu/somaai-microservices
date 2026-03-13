@@ -188,6 +188,7 @@ services:
       PAYMENTS_SERVICE_URL: http://payments:3008
       MONOLITH_SERVICE_URL: http://monolith:3010
       EMAIL_SERVICE_URL: http://email:3012
+      UPLOAD_SERVICE_URL: http://upload:3008
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -428,6 +429,7 @@ services:
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      UPLOAD_SERVICE_URL: http://upload:3008
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -449,24 +451,46 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3012
-      DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
       EMAIL_PROVIDER: sendgrid
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-your-sendgrid-api-key}
-      SMTP_HOST: smtp.hostinger.com
-      SMTP_PORT: 465
-      SMTP_USER: somaai@wilkcaetano.com.br
-      SMTP_PASSWORD: @Wilk2026#
-      SMTP_FROM: somaai@wilkcaetano.com.br
-      SMTP_FROM_NAME: SomaAI
+      SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-somaai@wilkcaetano.com.br}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM:-somaai@wilkcaetano.com.br}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-SomaAI}
     depends_on:
-      mysql-master:
-        condition: service_healthy
       redis:
         condition: service_healthy
       kafka-1:
         condition: service_healthy
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+  upload:
+    build:
+      context: ./services/upload
+      dockerfile: Dockerfile
+    container_name: upload-service
+    ports:
+      - "3013:3008"
+    environment:
+      NODE_ENV: production
+      PORT: 3008
+      UPLOAD_PROVIDER: S3
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-somaaiuploads}
+      FTP_HOST: ${FTP_HOST:-ftp.wilkcaetano.com.br}
+      FTP_PORT: 21
+      FTP_USER: ${FTP_USER}
+      FTP_PASS: ${FTP_PASS}
+      FTP_SECURE: "false"
+      FTP_BASE_PATH: /public_html/somaai/uploads
     networks:
       - somaai-network
     restart: unless-stopped
