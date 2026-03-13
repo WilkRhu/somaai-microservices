@@ -4,13 +4,11 @@ import { S3Service } from './services/s3.service';
 import { FtpService } from './services/ftp.service';
 import { UploadProvider } from './enums/upload-provider.enum';
 
-interface UploadRecord {
+export interface UploadRecord {
   id: string;
   fileName: string;
-  originalName: string;
   url: string;
   size: number;
-  mimeType: string;
   uploadedAt: Date;
   provider: UploadProvider;
 }
@@ -30,31 +28,59 @@ export class UploadService {
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    file?: any,
+    base64?: string,
     folder?: string,
     fileName?: string,
   ): Promise<{ id: string; url: string; fileName: string }> {
     try {
-      if (!file) {
-        throw new HttpException('No file provided', HttpStatus.BAD_REQUEST);
+      if (!file && !base64) {
+        throw new HttpException(
+          'No file or base64 provided',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      let result;
+      let fileBuffer: Buffer;
+      let mimeType: string;
+      let originalName: string;
 
-      if (this.provider === UploadProvider.S3) {
-        result = await this.s3Service.uploadFile(file, folder, fileName);
+      if (base64) {
+        const result = this.parseBase64(base64);
+        fileBuffer = result.buffer;
+        mimeType = result.mimeType;
+        originalName = fileName || `image-${Date.now()}`;
       } else {
-        result = await this.ftpService.uploadFile(file, folder, fileName);
+        fileBuffer = file.buffer;
+        mimeType = file.mimetype;
+        originalName = fileName || file.originalname;
+      }
+
+      let uploadResult;
+
+      try {
+        uploadResult = await this.s3Service.uploadFile(
+          fileBuffer,
+          folder,
+          originalName,
+          mimeType,
+        );
+      } catch (s3Error) {
+        console.warn('S3 upload failed, trying FTP fallback:', s3Error);
+        uploadResult = await this.ftpService.uploadFile(
+          fileBuffer,
+          folder,
+          originalName,
+          mimeType,
+        );
       }
 
       const id = this.generateId();
       const record: UploadRecord = {
         id,
-        fileName: result.key || result.path,
-        originalName: file.originalname,
-        url: result.url,
-        size: file.size,
-        mimeType: file.mimetype,
+        fileName: originalName,
+        url: uploadResult.url,
+        size: fileBuffer.length,
         uploadedAt: new Date(),
         provider: this.provider,
       };
@@ -63,8 +89,8 @@ export class UploadService {
 
       return {
         id,
-        url: result.url,
-        fileName: file.originalname,
+        url: uploadResult.url,
+        fileName: originalName,
       };
     } catch (error) {
       throw new HttpException(
@@ -82,6 +108,25 @@ export class UploadService {
     }
 
     return record;
+  }
+
+  private parseBase64(base64String: string): {
+    buffer: Buffer;
+    mimeType: string;
+  } {
+    let mimeType = 'application/octet-stream';
+    let data = base64String;
+
+    if (base64String.startsWith('data:')) {
+      const matches = base64String.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        mimeType = matches[1];
+        data = matches[2];
+      }
+    }
+
+    const buffer = Buffer.from(data, 'base64');
+    return { buffer, mimeType };
   }
 
   private generateId(): string {

@@ -8,8 +8,9 @@ import {
   Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { UploadService } from './upload.service';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { UploadService, UploadRecord } from './upload.service';
+import { UploadFileDto } from './dto/upload-file.dto';
 
 @ApiTags('Upload')
 @Controller('upload')
@@ -18,38 +19,17 @@ export class UploadController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload a file' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-        folder: {
-          type: 'string',
-          example: 'documents',
-        },
-        fileName: {
-          type: 'string',
-          example: 'my-file',
-        },
-      },
-    },
-  })
+  @ApiOperation({ summary: 'Upload a file (multipart or base64)' })
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('folder') folder?: string,
-    @Body('fileName') fileName?: string,
-  ) {
-    return this.uploadService.uploadFile(file, folder, fileName);
+    @UploadedFile() file: any,
+    @Body() dto: UploadFileDto,
+  ): Promise<{ id: string; url: string; fileName: string }> {
+    return this.uploadService.uploadFile(file, dto.base64, dto.folder, dto.fileName);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get upload information' })
-  async getUploadInfo(@Param('id') id: string) {
+  async getUploadInfo(@Param('id') id: string): Promise<UploadRecord> {
     return this.uploadService.getUploadInfo(id);
   }
 }

@@ -12,9 +12,10 @@ export class FtpService {
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    fileData: Buffer,
     folder?: string,
     fileName?: string,
+    mimeType?: string,
   ): Promise<{ url: string; path: string }> {
     try {
       await this.client.access({
@@ -30,10 +31,10 @@ export class FtpService {
 
       await this.ensureDirectoryExists(uploadPath);
 
-      const fileName_ = fileName || file.originalname;
-      const remotePath = `${uploadPath}/${fileName_}`;
+      const originalName = fileName || `file-${Date.now()}`;
+      const remotePath = `${uploadPath}/${originalName}`;
 
-      const stream = Readable.from(file.buffer);
+      const stream = Readable.from(fileData);
       await this.client.uploadFrom(stream, remotePath);
 
       const ftpHost = this.configService.get('FTP_HOST');
@@ -60,8 +61,11 @@ export class FtpService {
         try {
           await this.client.cd(currentPath);
         } catch {
-          await this.client.mkdir(currentPath);
-          await this.client.cd(currentPath);
+          try {
+            await (this.client as any).ensureDir(currentPath);
+          } catch {
+            // Directory creation not supported, continue
+          }
         }
       }
     }

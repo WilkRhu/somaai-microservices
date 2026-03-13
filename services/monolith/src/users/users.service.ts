@@ -7,17 +7,40 @@ import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { OnboardingDto, OnboardingStatusDto } from './dto/onboarding.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { ImageUploadService } from './services/image-upload.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private httpService: HttpService,
+    private imageUploadService: ImageUploadService,
+  ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
+      let profileImageUrl: string | null = null;
+
+      // Upload profile image if provided
+      if (createUserDto.profileImage) {
+        profileImageUrl = await this.imageUploadService.uploadProfileImage(
+          createUserDto.profileImage,
+          'new-user',
+        );
+      }
+
+      const userPayload = {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+        phone: createUserDto.phone,
+        role: createUserDto.role,
+        profileImageUrl,
+      };
+
       const response = await firstValueFrom(
         this.httpService.post(
           `${process.env.AUTH_SERVICE_URL}/api/auth/register`,
-          createUserDto,
+          userPayload,
         ),
       );
       return response.data;
@@ -66,23 +89,53 @@ export class UsersService {
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
-    // This would typically call the Auth Service or update local profile
-    return {
-      id: userId,
-      email: updateUserDto.email || 'user@example.com',
-      firstName: updateUserDto.firstName || 'John',
-      lastName: updateUserDto.lastName || 'Doe',
-      isActive: true,
-      phone: updateUserDto.phone,
-      address: updateUserDto.address,
-      city: updateUserDto.city,
-      state: updateUserDto.state,
-      zipCode: updateUserDto.zipCode,
-      bio: updateUserDto.bio,
-      avatar: updateUserDto.avatar,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      let profileImageUrl: string | null = null;
+
+      // Upload profile image if provided
+      if (updateUserDto.profileImage) {
+        profileImageUrl = await this.imageUploadService.uploadProfileImage(
+          updateUserDto.profileImage,
+          userId,
+        );
+      }
+
+      const userPayload = {
+        email: updateUserDto.email,
+        firstName: updateUserDto.firstName,
+        lastName: updateUserDto.lastName,
+        phone: updateUserDto.phone,
+        address: updateUserDto.address,
+        city: updateUserDto.city,
+        state: updateUserDto.state,
+        zipCode: updateUserDto.zipCode,
+        bio: updateUserDto.bio,
+        avatar: profileImageUrl || updateUserDto.avatar,
+      };
+
+      // This would typically call the Auth Service or update local profile
+      return {
+        id: userId,
+        email: updateUserDto.email || 'user@example.com',
+        firstName: updateUserDto.firstName || 'John',
+        lastName: updateUserDto.lastName || 'Doe',
+        isActive: true,
+        phone: updateUserDto.phone,
+        address: updateUserDto.address,
+        city: updateUserDto.city,
+        state: updateUserDto.state,
+        zipCode: updateUserDto.zipCode,
+        bio: updateUserDto.bio,
+        avatar: profileImageUrl || updateUserDto.avatar,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to update user: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   async adminUpdateUser(

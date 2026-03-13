@@ -13,21 +13,22 @@ export class S3Service {
       secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY'),
       region: this.configService.get('AWS_REGION'),
     });
-    this.bucket = this.configService.get('AWS_S3_BUCKET');
+    this.bucket = this.configService.get('AWS_S3_BUCKET') || 'somaaiuploads';
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    fileData: Buffer,
     folder?: string,
     fileName?: string,
+    mimeType?: string,
   ): Promise<{ url: string; key: string }> {
-    const key = this.buildKey(folder, fileName || file.originalname);
+    const key = this.buildKey(folder, fileName || 'file');
 
     const params = {
       Bucket: this.bucket,
       Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+      Body: fileData,
+      ContentType: mimeType || 'application/octet-stream',
       ACL: 'public-read' as any,
     };
 
