@@ -62,6 +62,9 @@ export class Purchase {
   @Column({ type: 'timestamp' })
   purchasedAt: Date;
 
+  @Column({ type: 'json', nullable: true })
+  ocrData: Record<string, any>;
+
   @CreateDateColumn()
   createdAt: Date;
 

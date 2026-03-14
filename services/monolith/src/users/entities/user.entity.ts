@@ -1,12 +1,14 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
   OneToMany,
+  BeforeInsert,
 } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { UserAddress } from './user-address.entity';
 import { UserCard } from './user-card.entity';
 import { Purchase } from '../../purchases/entities/purchase.entity';
@@ -14,8 +16,15 @@ import { Purchase } from '../../purchases/entities/purchase.entity';
 @Entity('users')
 @Index(['cpf'], { unique: true, where: 'cpf IS NOT NULL' })
 export class User {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id: string;
+
+  @BeforeInsert()
+  generateId() {
+    if (!this.id) {
+      this.id = randomUUID();
+    }
+  }
 
   @Column({ type: 'varchar', length: 14, nullable: true })
   cpf: string;

@@ -1,37 +1,53 @@
-import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { OcrService } from './ocr.service';
-import { ProcessImageDto } from './dto/process-image.dto';
-import { OcrResponseDto } from './dto/ocr-response.dto';
-import { Auth } from '../common/decorators/auth.decorator';
 
 @ApiTags('OCR')
-@ApiBearerAuth('access-token')
 @Controller('api/ocr')
 export class OcrController {
+  private logger = new Logger(OcrController.name);
+
   constructor(private ocrService: OcrService) {}
 
-  @Post('process')
-  @Auth()
-  @ApiOperation({ summary: 'Process image with OCR' })
-  @ApiResponse({ status: 201, description: 'Image processing started', type: OcrResponseDto })
-  async processImage(@Body() processImageDto: ProcessImageDto): Promise<OcrResponseDto> {
-    return this.ocrService.processImage(processImageDto);
+  @Get('health')
+  @ApiOperation({ summary: 'Health check' })
+  health() {
+    return { status: 'ok', service: 'ocr' };
   }
 
-  @Get(':id')
-  @Auth()
-  @ApiOperation({ summary: 'Get OCR processing result' })
-  @ApiResponse({ status: 200, description: 'Processing result', type: OcrResponseDto })
-  async getProcessing(@Param('id') id: string): Promise<OcrResponseDto> {
-    return this.ocrService.getProcessing(id);
-  }
+  @Post('extract-base64')
+  @ApiOperation({ summary: 'Extract text and data from base64 image' })
+  @ApiResponse({ status: 201, description: 'Extraction completed' })
+  async extractBase64(@Body() body: any) {
+    try {
+      this.logger.debug(`Body received:`, body);
+      this.logger.debug(`Body type:`, typeof body);
+      this.logger.debug(`Body keys:`, body ? Object.keys(body) : 'null');
 
-  @Get()
-  @Auth()
-  @ApiOperation({ summary: 'List OCR processings' })
-  @ApiResponse({ status: 200, description: 'Processings list', type: [OcrResponseDto] })
-  async listProcessing(@Query('status') status?: string): Promise<OcrResponseDto[]> {
-    return this.ocrService.listProcessing(status);
+      // Accept both 'image' and 'imageBase64' field names
+      const imageData = body?.imageBase64 || body?.image;
+      
+      if (!body || !imageData) {
+        this.logger.error('Image data is required. Body:', body);
+        throw new HttpException('Image data is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Normalize the body to use imageBase64
+      const normalizedBody = {
+        ...body,
+        imageBase64: imageData,
+      };
+
+      return await this.ocrService.extractBase64(normalizedBody);
+    } catch (error) {
+      this.logger.error(`Controller error:`, error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || 'OCR extraction failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

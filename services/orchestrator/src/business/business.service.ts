@@ -8,19 +8,24 @@ export class BusinessService {
 
   constructor(private httpService: HttpService) {}
 
-  async proxyRequest(method: string, path: string, data?: any, headers?: any) {
+  async proxyRequest(method: string, path: string, data?: any, authHeader?: string) {
     const url = `${this.businessServiceUrl}${path}`;
 
     try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
       const response = await firstValueFrom(
         this.httpService.request({
           method: method.toLowerCase(),
           url,
           data,
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
+          headers,
         }),
       );
 
@@ -31,149 +36,150 @@ export class BusinessService {
   }
 
   // Establishments
-  async createEstablishment(data: any) {
-    return this.proxyRequest('POST', '/api/establishments', data);
+  async createEstablishment(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/establishments', data, authHeader);
   }
 
-  async listEstablishments(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/establishments?skip=${skip || 0}&take=${take || 20}`);
+  async listEstablishments(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getEstablishment(id: string) {
-    return this.proxyRequest('GET', `/api/establishments/${id}`);
+  async getEstablishment(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${id}`, undefined, authHeader);
   }
 
-  async updateEstablishment(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/establishments/${id}`, data);
+  async updateEstablishment(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/establishments/${id}`, data, authHeader);
   }
 
-  async deleteEstablishment(id: string) {
-    return this.proxyRequest('DELETE', `/api/establishments/${id}`);
+  async deleteEstablishment(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/establishments/${id}`, undefined, authHeader);
   }
 
   // Customers
-  async createCustomer(data: any) {
-    return this.proxyRequest('POST', '/api/customers', data);
+  async createCustomer(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/customers', data, authHeader);
   }
 
-  async listCustomers(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/customers?skip=${skip || 0}&take=${take || 20}`);
+  async listCustomers(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/customers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getCustomer(id: string) {
-    return this.proxyRequest('GET', `/api/customers/${id}`);
+  async getCustomer(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/customers/${id}`, undefined, authHeader);
   }
 
-  async updateCustomer(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/customers/${id}`, data);
+  async updateCustomer(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/customers/${id}`, data, authHeader);
   }
 
-  async deleteCustomer(id: string) {
-    return this.proxyRequest('DELETE', `/api/customers/${id}`);
+  async deleteCustomer(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/customers/${id}`, undefined, authHeader);
   }
 
   // Inventory
-  async createInventoryItem(data: any) {
-    return this.proxyRequest('POST', '/api/inventory', data);
+  async createInventoryItem(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/inventory', data, authHeader);
   }
 
-  async listInventoryItems(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/inventory?skip=${skip || 0}&take=${take || 20}`);
+  async listInventoryItems(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/inventory?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getInventoryItem(id: string) {
-    return this.proxyRequest('GET', `/api/inventory/${id}`);
+  async getInventoryItem(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/inventory/${id}`, undefined, authHeader);
   }
 
-  async updateInventoryItem(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/inventory/${id}`, data);
+  async updateInventoryItem(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/inventory/${id}`, data, authHeader);
   }
 
-  async deleteInventoryItem(id: string) {
-    return this.proxyRequest('DELETE', `/api/inventory/${id}`);
+  async deleteInventoryItem(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/inventory/${id}`, undefined, authHeader);
   }
 
-  // Sales
-  async createSale(data: any) {
-    return this.proxyRequest('POST', '/api/sales', data);
+  // Purchases (Sales)
+  async createSale(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/users/' + data.userId + '/purchases', data, authHeader);
   }
 
-  async listSales(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/sales?skip=${skip || 0}&take=${take || 20}`);
+  async listSales(skip?: number, take?: number, authHeader?: string) {
+    // Precisa de userId, será passado no data
+    return this.proxyRequest('GET', `/api/users/purchases?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getSale(id: string) {
-    return this.proxyRequest('GET', `/api/sales/${id}`);
+  async getSale(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/purchases/${id}`, undefined, authHeader);
   }
 
-  async updateSale(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/sales/${id}`, data);
+  async updateSale(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/purchases/${id}`, data, authHeader);
   }
 
-  async deleteSale(id: string) {
-    return this.proxyRequest('DELETE', `/api/sales/${id}`);
+  async deleteSale(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/purchases/${id}`, undefined, authHeader);
   }
 
   // Expenses
-  async createExpense(data: any) {
-    return this.proxyRequest('POST', '/api/expenses', data);
+  async createExpense(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/expenses', data, authHeader);
   }
 
-  async listExpenses(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/expenses?skip=${skip || 0}&take=${take || 20}`);
+  async listExpenses(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/expenses?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getExpense(id: string) {
-    return this.proxyRequest('GET', `/api/expenses/${id}`);
+  async getExpense(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/expenses/${id}`, undefined, authHeader);
   }
 
-  async updateExpense(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/expenses/${id}`, data);
+  async updateExpense(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/expenses/${id}`, data, authHeader);
   }
 
-  async deleteExpense(id: string) {
-    return this.proxyRequest('DELETE', `/api/expenses/${id}`);
+  async deleteExpense(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/expenses/${id}`, undefined, authHeader);
   }
 
   // Suppliers
-  async createSupplier(data: any) {
-    return this.proxyRequest('POST', '/api/suppliers', data);
+  async createSupplier(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/suppliers', data, authHeader);
   }
 
-  async listSuppliers(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/suppliers?skip=${skip || 0}&take=${take || 20}`);
+  async listSuppliers(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/suppliers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getSupplier(id: string) {
-    return this.proxyRequest('GET', `/api/suppliers/${id}`);
+  async getSupplier(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/suppliers/${id}`, undefined, authHeader);
   }
 
-  async updateSupplier(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/suppliers/${id}`, data);
+  async updateSupplier(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/suppliers/${id}`, data, authHeader);
   }
 
-  async deleteSupplier(id: string) {
-    return this.proxyRequest('DELETE', `/api/suppliers/${id}`);
+  async deleteSupplier(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/suppliers/${id}`, undefined, authHeader);
   }
 
   // Offers
-  async createOffer(data: any) {
-    return this.proxyRequest('POST', '/api/offers', data);
+  async createOffer(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/offers', data, authHeader);
   }
 
-  async listOffers(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/offers?skip=${skip || 0}&take=${take || 20}`);
+  async listOffers(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/offers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
-  async getOffer(id: string) {
-    return this.proxyRequest('GET', `/api/offers/${id}`);
+  async getOffer(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/offers/${id}`, undefined, authHeader);
   }
 
-  async updateOffer(id: string, data: any) {
-    return this.proxyRequest('PUT', `/api/offers/${id}`, data);
+  async updateOffer(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/offers/${id}`, data, authHeader);
   }
 
-  async deleteOffer(id: string) {
-    return this.proxyRequest('DELETE', `/api/offers/${id}`);
+  async deleteOffer(id: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/offers/${id}`, undefined, authHeader);
   }
 }

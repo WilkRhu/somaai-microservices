@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CommonModule } from './common/common.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
@@ -11,6 +12,7 @@ import { EstablishmentsModule } from './establishments/establishments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { MonolithConsumerService } from './kafka/monolith.consumer';
+import { OcrModule } from './ocr/ocr.module';
 
 @Module({
   imports: [
@@ -31,11 +33,13 @@ import { MonolithConsumerService } from './kafka/monolith.consumer';
     }),
     HttpModule,
     KafkaModule,
+    CommonModule,
     UsersModule,
     ProductsModule,
     PurchasesModule,
     EstablishmentsModule,
     SubscriptionsModule,
+    OcrModule,
   ],
   controllers: [AppController],
   providers: [AppService, MonolithConsumerService],

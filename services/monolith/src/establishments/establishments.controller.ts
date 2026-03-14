@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Patch, Param, Body, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { EstablishmentsService } from './establishments.service';
 import { CreateEstablishmentDto } from './dto/create-establishment.dto';
 import { EstablishmentResponseDto } from './dto/establishment-response.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Establishments')
 @ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('api/establishments')
 export class EstablishmentsController {
   constructor(private establishmentsService: EstablishmentsService) {}
@@ -19,9 +22,9 @@ export class EstablishmentsController {
   })
   async create(
     @Body() createEstablishmentDto: CreateEstablishmentDto,
-    @Request() req: any,
+    @CurrentUser() userId: string,
   ): Promise<EstablishmentResponseDto> {
-    return this.establishmentsService.create(req.user?.id, createEstablishmentDto);
+    return this.establishmentsService.create(userId, createEstablishmentDto);
   }
 
   @Get(':id')
@@ -42,8 +45,8 @@ export class EstablishmentsController {
     description: 'List of establishments',
     type: [EstablishmentResponseDto],
   })
-  async findByUser(@Request() req: any): Promise<EstablishmentResponseDto[]> {
-    return this.establishmentsService.findByUserId(req.user?.id);
+  async findByUser(@CurrentUser() userId: string): Promise<EstablishmentResponseDto[]> {
+    return this.establishmentsService.findByUserId(userId);
   }
 
   @Patch(':id')

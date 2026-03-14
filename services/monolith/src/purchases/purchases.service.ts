@@ -8,6 +8,7 @@ import { PurchaseResponseDto, PurchaseSummaryDto } from './dto/purchase-response
 import { KafkaService } from '../kafka/kafka.service';
 import { Purchase } from './entities/purchase.entity';
 import { PurchaseItem } from './entities/purchase-item.entity';
+import { UserSyncService } from '../users/services/user-sync.service';
 
 @Injectable()
 export class PurchasesService {
@@ -18,11 +19,32 @@ export class PurchasesService {
     private purchaseItemRepository: Repository<PurchaseItem>,
     private httpService: HttpService,
     private kafkaService: KafkaService,
+    private userSyncService: UserSyncService,
   ) {}
+
+  /**
+   * Garante que o usuário existe no monolith antes de criar a purchase.
+   * Se não existir, cria um registro mínimo para satisfazer a FK.
+   */
+  private async ensureUserExists(userId: string): Promise<void> {
+    const exists = await this.userSyncService.checkUserExists(userId);
+    if (!exists) {
+      await this.userSyncService.syncUserFromAuth({
+        id: userId,
+        email: `${userId}@placeholder.local`,
+        firstName: 'User',
+        lastName: userId.substring(0, 8),
+        authProvider: 'EMAIL',
+        role: 'USER',
+        emailVerified: false,
+      });
+    }
+  }
 
   async createPurchase(createPurchaseDto: CreatePurchaseDto & { userId: string }): Promise<PurchaseResponseDto> {
     try {
-      // Transformar purchase em sale para o orquestrador
+      // Garantir que o usuário existe no monolith antes de qualquer operação
+      await this.ensureUserExists(createPurchaseDto.userId);
       const saleData = {
         userId: createPurchaseDto.userId,
         type: createPurchaseDto.type,
@@ -59,6 +81,7 @@ export class PurchasesService {
           purchasedAt: new Date(sale.purchasedAt),
           installments: sale.installments || 1,
           status: 'COMPLETED',
+          ocrData: createPurchaseDto.ocrData || null,
         });
 
         const savedPurchase = await this.purchaseRepository.save(purchase);
@@ -89,6 +112,7 @@ export class PurchasesService {
           items: sale.items || [],
           products: sale.items || [],
           installments: savedPurchase.installments,
+          ocrData: savedPurchase.ocrData,
           createdAt: savedPurchase.createdAt,
           updatedAt: savedPurchase.updatedAt,
         };
@@ -111,6 +135,7 @@ export class PurchasesService {
           purchasedAt: new Date(createPurchaseDto.purchasedAt),
           installments: createPurchaseDto.installments || 1,
           status: 'COMPLETED',
+          ocrData: createPurchaseDto.ocrData || null,
         });
 
         const savedPurchase = await this.purchaseRepository.save(purchase);
@@ -141,6 +166,7 @@ export class PurchasesService {
           items: createPurchaseDto.items || [],
           products: createPurchaseDto.products || [],
           installments: savedPurchase.installments,
+          ocrData: savedPurchase.ocrData,
           createdAt: savedPurchase.createdAt,
           updatedAt: savedPurchase.updatedAt,
         };
@@ -161,8 +187,8 @@ export class PurchasesService {
   async listPurchases(userId: string, skip: number = 0, take: number = 20): Promise<any> {
     const [items, total] = await this.purchaseRepository.findAndCount({
       where: { userId },
-      skip,
-      take,
+      skip: Number(skip),
+      take: Number(take),
       relations: ['items'],
       order: { purchasedAt: 'DESC' },
     });
@@ -225,6 +251,7 @@ export class PurchasesService {
       paymentMethod: purchase.paymentMethod,
       purchasedAt: purchase.purchasedAt,
       items: purchase.items,
+      ocrData: purchase.ocrData,
       createdAt: purchase.createdAt,
       updatedAt: purchase.updatedAt,
     };

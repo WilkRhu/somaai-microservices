@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthClient } from './auth.client';
 
@@ -58,5 +58,15 @@ export class AuthController {
   })
   async refresh(@Body() refreshDto: { refreshToken: string }) {
     return this.authClient.refreshToken(refreshDto.refreshToken);
+  }
+
+  @Post('test-sync/:userId')
+  @ApiOperation({ summary: 'Test sync user to monolith (DEBUG)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync test result',
+  })
+  async testSync(@Param('userId') userId: string) {
+    return this.authClient.testSyncUser(userId);
   }
 }

@@ -7,11 +7,11 @@ import {
   Delete,
   Param,
   Body,
-  Request,
   Query,
   Headers,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -24,8 +24,14 @@ import { UserStatsDto } from './dto/user-stats.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { SyncFromAuthDto } from './dto/sync-from-auth.dto';
 import { User } from './entities/user.entity';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RoleGuard } from '../common/guards/role.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Users')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('api/users')
 export class UsersController {
   constructor(
@@ -66,7 +72,14 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserById(@Param('id') userId: string): Promise<UserResponseDto> {
+  async getUserById(
+    @Param('id') userId: string,
+    @CurrentUser() currentUserId: string,
+  ): Promise<UserResponseDto> {
+    // Validar que o usuário está acessando seus próprios dados ou é admin
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.usersService.getUserById(userId);
   }
 
@@ -80,7 +93,11 @@ export class UsersController {
   async updateUserFull(
     @Param('id') userId: string,
     @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() currentUserId: string,
   ): Promise<UserResponseDto> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.usersService.updateUser(userId, updateUserDto);
   }
 
@@ -94,14 +111,24 @@ export class UsersController {
   async updateUserPartial(
     @Param('id') userId: string,
     @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() currentUserId: string,
   ): Promise<UserResponseDto> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.usersService.updateUser(userId, updateUserDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
   @ApiResponse({ status: 200, description: 'User deleted' })
-  async deleteUser(@Param('id') userId: string): Promise<{ success: boolean }> {
+  async deleteUser(
+    @Param('id') userId: string,
+    @CurrentUser() currentUserId: string,
+  ): Promise<{ success: boolean }> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     await this.usersService.deleteUser(userId);
     return { success: true };
   }
@@ -116,7 +143,11 @@ export class UsersController {
   async uploadAvatar(
     @Param('id') userId: string,
     @Body() body: { avatarUrl: string },
+    @CurrentUser() currentUserId: string,
   ): Promise<UserResponseDto> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     return this.usersService.updateAvatar(userId, body.avatarUrl);
   }
 
@@ -127,22 +158,14 @@ export class UsersController {
     description: 'Onboarding status',
     type: OnboardingStatusDto,
   })
-  async getOnboardingStatus(@Param('id') userId: string): Promise<OnboardingStatusDto> {
-    return this.usersService.getOnboardingStatus(userId);
-  }
-
-  @Get(':id/purchases')
-  @ApiOperation({ summary: 'Get user purchases' })
-  @ApiResponse({
-    status: 200,
-    description: 'User purchases',
-  })
-  async getUserPurchases(
+  async getOnboardingStatus(
     @Param('id') userId: string,
-    @Query('skip') skip: number = 0,
-    @Query('take') take: number = 20,
-  ): Promise<any> {
-    return this.usersService.getUserPurchases(userId, skip, take);
+    @CurrentUser() currentUserId: string,
+  ): Promise<OnboardingStatusDto> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.usersService.getOnboardingStatus(userId);
   }
 
   @Post(':id/onboarding/complete')
@@ -151,7 +174,11 @@ export class UsersController {
   async completeOnboarding(
     @Param('id') userId: string,
     @Body() onboardingDto: OnboardingDto,
+    @CurrentUser() currentUserId: string,
   ): Promise<{ success: boolean }> {
+    if (userId !== currentUserId) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
     await this.usersService.completeOnboarding(userId, onboardingDto);
     return { success: true };
   }
@@ -168,7 +195,6 @@ export class UsersController {
   }
 
   @Get('profile/me')
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,
@@ -176,12 +202,15 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Request() req: any): Promise<UserResponseDto> {
-    return this.usersService.getUserProfile(req.user?.id);
+  async getProfile(@CurrentUser() userId: string): Promise<UserResponseDto> {
+    return this.usersService.getUserProfile(userId);
   }
 }
 
 @ApiTags('Admin')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RoleGuard)
+@Roles('ADMIN')
 @Controller('api/admin/users')
 export class AdminUsersController {
   constructor(private usersService: UsersService) {}

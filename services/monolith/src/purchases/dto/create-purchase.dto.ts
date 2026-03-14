@@ -21,6 +21,23 @@ export class PurchaseItemDto {
   category?: string;
 }
 
+export class OcrExtractedDataDto {
+  @IsString()
+  @IsOptional()
+  text?: string;
+
+  @IsOptional()
+  extractedData?: Record<string, any>;
+
+  @IsNumber()
+  @IsOptional()
+  confidence?: number;
+
+  @IsString()
+  @IsOptional()
+  documentType?: string;
+}
+
 export class CreatePurchaseDto {
   @IsEnum(PurchaseType)
   type: PurchaseType;
@@ -56,4 +73,9 @@ export class CreatePurchaseDto {
   @IsNumber()
   @IsOptional()
   installments?: number = 1;
+
+  @ValidateNested()
+  @Type(() => OcrExtractedDataDto)
+  @IsOptional()
+  ocrData?: OcrExtractedDataDto;
 }

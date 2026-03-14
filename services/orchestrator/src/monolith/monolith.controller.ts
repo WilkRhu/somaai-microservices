@@ -2,125 +2,176 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
   Body,
   Query,
-  Headers,
+  UseGuards,
+  Request,
+  Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { MonolithService } from './monolith.service';
-import * as jwt from 'jsonwebtoken';
+import { AuthGuard } from '../common/guards/auth.guard';
 
 @ApiTags('Monolith')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('api/monolith')
 export class MonolithController {
+  private readonly logger = new Logger(MonolithController.name);
+
   constructor(private monolithService: MonolithService) {}
 
-  private extractUserIdFromToken(authHeader: string): string | null {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    try {
-      const token = authHeader.substring(7);
-      const decoded: any = jwt.decode(token);
-      return decoded?.sub || null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Purchases
-  @Post('purchases')
-  @ApiOperation({ summary: 'Create purchase' })
-  async createPurchase(@Body() data: any, @Headers('authorization') authHeader: string) {
-    const userId = this.extractUserIdFromToken(authHeader);
-    if (!userId) {
-      throw new Error('User ID not found in token');
-    }
-    return this.monolithService.createPurchase({ ...data, userId });
-  }
-
-  @Get('purchases/:id')
-  @ApiOperation({ summary: 'Get purchase' })
-  async getPurchase(@Param('id') id: string) {
-    return this.monolithService.getPurchase(id);
-  }
-
-  @Get('purchases')
-  @ApiOperation({ summary: 'List purchases' })
-  async listPurchases(
-    @Query('skip') skip?: number,
-    @Query('take') take?: number,
-  ) {
-    return this.monolithService.listPurchases(skip, take);
-  }
-
+  // Users
   @Get('users/:userId/purchases')
   @ApiOperation({ summary: 'List user purchases' })
-  async listUserPurchases(
+  async getUserPurchases(
     @Param('userId') userId: string,
     @Query('skip') skip?: number,
     @Query('take') take?: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Request() req?: any,
   ) {
-    return this.monolithService.listUserPurchases(userId, skip, take);
+    const authHeader = req?.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in getUserPurchases');
+    }
+    // Support both skip/take and page/limit conventions
+    const resolvedTake = take ?? limit ?? 20;
+    const resolvedSkip = skip ?? (page ? (page - 1) * resolvedTake : 0);
+    return this.monolithService.getUserPurchases(userId, resolvedSkip, resolvedTake, authHeader);
   }
 
   @Post('users/:userId/purchases')
-  @ApiOperation({ summary: 'Create user purchase' })
-  async createUserPurchase(
+  @ApiOperation({ summary: 'Create purchase for user' })
+  async createPurchase(
     @Param('userId') userId: string,
     @Body() data: any,
+    @Request() req: any,
   ) {
-    // Passar userId para o service, que vai usar na URL
-    return this.monolithService.createPurchaseForUser(userId, data);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in createPurchase');
+    }
+    return this.monolithService.createPurchase(userId, data, authHeader);
   }
 
-  @Patch('purchases/:id')
+  @Get('users/:userId/purchases/:purchaseId')
+  @ApiOperation({ summary: 'Get purchase' })
+  async getPurchase(
+    @Param('userId') userId: string,
+    @Param('purchaseId') purchaseId: string,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in getPurchase');
+    }
+    return this.monolithService.getPurchase(userId, purchaseId, authHeader);
+  }
+
+  @Put('users/:userId/purchases/:purchaseId')
   @ApiOperation({ summary: 'Update purchase' })
-  async updatePurchase(@Param('id') id: string, @Body() data: any) {
-    return this.monolithService.updatePurchase(id, data);
+  async updatePurchase(
+    @Param('userId') userId: string,
+    @Param('purchaseId') purchaseId: string,
+    @Body() data: any,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in updatePurchase');
+    }
+    return this.monolithService.updatePurchase(userId, purchaseId, data, authHeader);
   }
 
-  @Delete('purchases/:id')
+  @Delete('users/:userId/purchases/:purchaseId')
   @ApiOperation({ summary: 'Delete purchase' })
-  async deletePurchase(@Param('id') id: string) {
-    return this.monolithService.deletePurchase(id);
+  async deletePurchase(
+    @Param('userId') userId: string,
+    @Param('purchaseId') purchaseId: string,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in deletePurchase');
+    }
+    return this.monolithService.deletePurchase(userId, purchaseId, authHeader);
   }
 
-  // Users
-  @Post('users')
-  @ApiOperation({ summary: 'Create user' })
-  async createUser(@Body() data: any) {
-    return this.monolithService.createUser(data);
-  }
-
-  @Get('users/:id')
-  @ApiOperation({ summary: 'Get user' })
-  async getUser(@Param('id') id: string) {
-    return this.monolithService.getUser(id);
-  }
-
-  @Get('users')
-  @ApiOperation({ summary: 'List users' })
-  async listUsers(
+  // Purchases (direct access)
+  @Get('purchases')
+  @ApiOperation({ summary: 'List all purchases' })
+  async listPurchases(
     @Query('skip') skip?: number,
     @Query('take') take?: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Request() req?: any,
   ) {
-    return this.monolithService.listUsers(skip, take);
+    const authHeader = req?.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in listPurchases');
+    }
+    const resolvedTake = take ?? limit ?? 20;
+    const resolvedSkip = skip ?? (page ? (page - 1) * resolvedTake : 0);
+    return this.monolithService.listPurchases(resolvedSkip, resolvedTake, authHeader);
   }
 
-  @Patch('users/:id')
-  @ApiOperation({ summary: 'Update user' })
-  async updateUser(@Param('id') id: string, @Body() data: any) {
-    return this.monolithService.updateUser(id, data);
+  @Post('purchases')
+  @ApiOperation({ summary: 'Create purchase' })
+  async createPurchaseDirectly(
+    @Body() data: any,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in createPurchaseDirectly');
+    }
+    return this.monolithService.createPurchaseDirectly(data, authHeader);
   }
 
-  @Delete('users/:id')
-  @ApiOperation({ summary: 'Delete user' })
-  async deleteUser(@Param('id') id: string) {
-    return this.monolithService.deleteUser(id);
+  @Get('purchases/:purchaseId')
+  @ApiOperation({ summary: 'Get purchase by ID' })
+  async getPurchaseById(
+    @Param('purchaseId') purchaseId: string,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in getPurchaseById');
+    }
+    return this.monolithService.getPurchaseById(purchaseId, authHeader);
+  }
+
+  @Put('purchases/:purchaseId')
+  @ApiOperation({ summary: 'Update purchase by ID' })
+  async updatePurchaseById(
+    @Param('purchaseId') purchaseId: string,
+    @Body() data: any,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in updatePurchaseById');
+    }
+    return this.monolithService.updatePurchaseById(purchaseId, data, authHeader);
+  }
+
+  @Delete('purchases/:purchaseId')
+  @ApiOperation({ summary: 'Delete purchase by ID' })
+  async deletePurchaseById(
+    @Param('purchaseId') purchaseId: string,
+    @Request() req: any,
+  ) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in deletePurchaseById');
+    }
+    return this.monolithService.deletePurchaseById(purchaseId, authHeader);
   }
 }

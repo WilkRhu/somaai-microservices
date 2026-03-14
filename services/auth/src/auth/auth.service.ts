@@ -292,14 +292,21 @@ export class AuthService {
       email: user.email,
     };
 
+    const expiration = process.env.JWT_EXPIRATION || '3600s';
+    const refreshExpiration = process.env.JWT_REFRESH_EXPIRATION || '604800s';
+
+    // Ensure numeric-only values get 's' suffix (e.g. "3600" -> "3600s")
+    const accessExpiry = /^\d+$/.test(expiration) ? `${expiration}s` : expiration;
+    const refreshExpiry = /^\d+$/.test(refreshExpiration) ? `${refreshExpiration}s` : refreshExpiration;
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRATION || '3600s',
+      expiresIn: accessExpiry,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRATION || '604800s',
+      expiresIn: refreshExpiry,
     });
 
     return { accessToken, refreshToken };

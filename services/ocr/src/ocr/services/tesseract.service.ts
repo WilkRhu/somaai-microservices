@@ -10,14 +10,19 @@ export class TesseractService {
     confidence: number;
   }> {
     try {
-      this.logger.debug('Starting OCR processing...');
+      this.logger.debug(`Starting OCR processing with language: ${language}`);
 
+      // Tesseract.js pode precisar baixar modelos na primeira execução
       const result = await Tesseract.recognize(imageBuffer, language, {
-        logger: (m) => this.logger.debug(`Tesseract: ${m.status} ${m.progress}`),
+        logger: (m) => {
+          if (m.status === 'recognizing') {
+            this.logger.debug(`Tesseract progress: ${(m.progress * 100).toFixed(2)}%`);
+          }
+        },
       });
 
-      const text = result.data.text;
-      const confidence = result.data.confidence;
+      const text = result.data.text || '';
+      const confidence = result.data.confidence || 0;
 
       this.logger.debug(`OCR completed. Confidence: ${confidence}%`);
 
@@ -27,7 +32,7 @@ export class TesseractService {
       };
     } catch (error) {
       this.logger.error(`OCR processing failed: ${error.message}`);
-      throw error;
+      throw new Error(`OCR extraction failed: ${error.message}`);
     }
   }
 

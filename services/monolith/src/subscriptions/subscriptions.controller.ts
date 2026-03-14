@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Patch, Delete, Param, Body, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('api/subscriptions')
 export class SubscriptionsController {
   constructor(private subscriptionsService: SubscriptionsService) {}
@@ -19,9 +22,9 @@ export class SubscriptionsController {
   })
   async create(
     @Body() createSubscriptionDto: CreateSubscriptionDto,
-    @Request() req: any,
+    @CurrentUser() userId: string,
   ): Promise<SubscriptionResponseDto> {
-    return this.subscriptionsService.create(req.user?.id, createSubscriptionDto);
+    return this.subscriptionsService.create(userId, createSubscriptionDto);
   }
 
   @Get(':id')
@@ -42,8 +45,8 @@ export class SubscriptionsController {
     description: 'List of subscriptions',
     type: [SubscriptionResponseDto],
   })
-  async findByUser(@Request() req: any): Promise<SubscriptionResponseDto[]> {
-    return this.subscriptionsService.findByUserId(req.user?.id);
+  async findByUser(@CurrentUser() userId: string): Promise<SubscriptionResponseDto[]> {
+    return this.subscriptionsService.findByUserId(userId);
   }
 
   @Patch(':id')

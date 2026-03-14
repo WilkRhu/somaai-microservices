@@ -64,4 +64,17 @@ export class AuthClient {
       throw new Error(`Token refresh failed: ${error.message}`);
     }
   }
+
+  async testSyncUser(userId: string) {
+    try {
+      const response = await this.httpClient.post(`/api/auth/test-sync/${userId}`, {});
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        response: error.response?.data,
+      };
+    }
+  }
 }

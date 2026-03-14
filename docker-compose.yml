@@ -136,9 +136,17 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3011
-      DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
-      REDIS_URL: redis://redis:6379
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: somaai_master
+      DB_LOGGING: "false"
       KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: business-service
+      JWT_SECRET: your-secret-key-here
+      JWT_EXPIRATION: 24h
+      AUTH_SERVICE_URL: http://auth:3010
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -352,10 +360,20 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
-      REDIS_URL: redis://redis:6379
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: somaai_master
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       KAFKA_BROKERS: kafka:9092
-      UPLOAD_SERVICE_URL: http://upload:3008
+      AUTH_SERVICE_URL: http://auth:3010
+      ORCHESTRATOR_SERVICE_URL: http://orchestrator:3009
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRATION: 3600
     depends_on:
       mysql-master:
         condition: service_healthy

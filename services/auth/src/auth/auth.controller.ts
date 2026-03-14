@@ -122,4 +122,15 @@ export class AuthController {
       },
     };
   }
+
+  @Post('test-sync/:userId')
+  @ApiOperation({ summary: 'Test sync user to monolith (DEBUG)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync test result',
+  })
+  async testSyncUser(@Request() req: any) {
+    // This endpoint is just for testing - it will be called by orchestrator
+    return { message: 'Test sync endpoint - call from orchestrator' };
+  }
 }

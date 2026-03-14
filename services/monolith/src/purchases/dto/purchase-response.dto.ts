@@ -10,6 +10,7 @@ export class PurchaseResponseDto {
   items?: any[];
   products?: any[];
   installments?: number;
+  ocrData?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,64 +1,40 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
-import { OcrProcessing } from './entities/ocr-processing.entity';
-import { ProcessImageDto } from './dto/process-image.dto';
-import { OcrResponseDto } from './dto/ocr-response.dto';
+import { Injectable, Logger } from '@nestjs/common';
 import { TesseractService } from './services/tesseract.service';
-import { OcrProducerService } from '../kafka/ocr.producer';
 
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);
 
-  constructor(
-    @InjectRepository(OcrProcessing)
-    private ocrRepository: Repository<OcrProcessing>,
-    private tesseractService: TesseractService,
-    private ocrProducer: OcrProducerService,
-  ) {}
+  constructor(private tesseractService: TesseractService) {}
 
-  async processImage(processImageDto: ProcessImageDto): Promise<OcrResponseDto> {
+  async extractBase64(body: any): Promise<any> {
     try {
-      // Validate input
-      if (!processImageDto.imageBase64) {
-        throw new BadRequestException('Image data is required');
+      this.logger.debug(`Received extract request`);
+
+      let imageBase64 = body?.imageBase64;
+      if (!imageBase64) {
+        throw new Error('Image data is required');
+      }
+
+      // Remove data URI prefix if present (e.g., "data:image/png;base64,")
+      if (imageBase64.includes(',')) {
+        imageBase64 = imageBase64.split(',')[1];
+        this.logger.debug(`Removed data URI prefix from base64`);
       }
 
       // Convert base64 to buffer
-      const imageBuffer = Buffer.from(processImageDto.imageBase64, 'base64');
+      let imageBuffer: Buffer;
+      try {
+        imageBuffer = Buffer.from(imageBase64, 'base64');
+        this.logger.debug(`Converted base64 to buffer, size: ${imageBuffer.length} bytes`);
+      } catch (error) {
+        throw new Error(`Invalid base64 image: ${error.message}`);
+      }
 
-      // Create processing record
-      const processing = this.ocrRepository.create({
-        id: uuidv4(),
-        fileName: processImageDto.fileName,
-        documentType: processImageDto.documentType,
-        imageData: imageBuffer,
-        status: 'processing',
-        referenceId: processImageDto.referenceId,
-      });
+      const language = body?.language || process.env.OCR_LANGUAGE || 'por';
+      const documentType = body?.documentType || 'receipt';
 
-      await this.ocrRepository.save(processing);
-
-      // Process image asynchronously
-      this.processImageAsync(processing.id, imageBuffer, processImageDto.documentType);
-
-      return this.mapToResponse(processing);
-    } catch (error) {
-      this.logger.error(`Error processing image: ${error.message}`);
-      throw error;
-    }
-  }
-
-  private async processImageAsync(
-    processingId: string,
-    imageBuffer: Buffer,
-    documentType: string,
-  ): Promise<void> {
-    try {
-      const language = process.env.OCR_LANGUAGE || 'por';
-      const confidenceThreshold = parseFloat(process.env.OCR_CONFIDENCE_THRESHOLD || '0.5');
+      this.logger.debug(`Extracting OCR (type: ${documentType}, language: ${language})`);
 
       // Extract text
       const { text, confidence } = await this.tesseractService.extractText(
@@ -73,90 +49,17 @@ export class OcrService {
         language,
       );
 
-      // Update processing record
-      const processing = await this.ocrRepository.findOne({
-        where: { id: processingId },
-      });
+      this.logger.debug(`OCR completed with confidence: ${confidence}`);
 
-      if (processing) {
-        processing.status = confidence >= confidenceThreshold ? 'completed' : 'completed';
-        processing.extractedText = text;
-        processing.extractedData = extractedData;
-        processing.confidence = confidence;
-        processing.completedAt = new Date();
-
-        await this.ocrRepository.save(processing);
-
-        // Publish event
-        await this.ocrProducer.publishProcessingCompleted({
-          processingId: processing.id,
-          fileName: processing.fileName,
-          documentType: processing.documentType,
-          status: processing.status,
-          extractedText: processing.extractedText,
-          extractedData: processing.extractedData,
-          confidence: processing.confidence,
-          referenceId: processing.referenceId,
-          completedAt: processing.completedAt,
-        });
-
-        this.logger.log(`OCR processing completed for ${processingId}`);
-      }
+      return {
+        text,
+        extractedData,
+        confidence,
+        documentType,
+      };
     } catch (error) {
-      this.logger.error(`Error in async processing: ${error.message}`);
-
-      // Update with error
-      const processing = await this.ocrRepository.findOne({
-        where: { id: processingId },
-      });
-
-      if (processing) {
-        processing.status = 'failed';
-        processing.errorMessage = error.message;
-        processing.completedAt = new Date();
-        await this.ocrRepository.save(processing);
-      }
+      this.logger.error(`Error extracting base64: ${error.message}`);
+      throw error;
     }
-  }
-
-  async getProcessing(id: string): Promise<OcrResponseDto> {
-    const processing = await this.ocrRepository.findOne({
-      where: { id },
-    });
-
-    if (!processing) {
-      throw new BadRequestException('Processing not found');
-    }
-
-    return this.mapToResponse(processing);
-  }
-
-  async listProcessing(status?: string): Promise<OcrResponseDto[]> {
-    const query = this.ocrRepository.createQueryBuilder('ocr');
-
-    if (status) {
-      query.where('ocr.status = :status', { status });
-    }
-
-    const processings = await query.orderBy('ocr.createdAt', 'DESC').take(100).getMany();
-
-    return processings.map((p) => this.mapToResponse(p));
-  }
-
-  private mapToResponse(processing: OcrProcessing): OcrResponseDto {
-    return {
-      id: processing.id,
-      fileName: processing.fileName,
-      documentType: processing.documentType,
-      status: processing.status,
-      extractedText: processing.extractedText,
-      extractedData: processing.extractedData,
-      confidence: processing.confidence,
-      errorMessage: processing.errorMessage,
-      referenceId: processing.referenceId,
-      createdAt: processing.createdAt,
-      updatedAt: processing.updatedAt,
-      completedAt: processing.completedAt,
-    };
   }
 }

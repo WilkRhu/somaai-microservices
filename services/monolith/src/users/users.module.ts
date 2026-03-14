@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
+import { CommonModule } from '../common/common.module';
 import { UsersService } from './users.service';
 import { UsersController, AdminUsersController, UsersInternalController } from './users.controller';
 import { User } from './entities/user.entity';
@@ -9,7 +10,7 @@ import { ImageUploadService } from './services/image-upload.service';
 import { UserSyncService } from './services/user-sync.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserProfile]), HttpModule],
+  imports: [TypeOrmModule.forFeature([User, UserProfile]), HttpModule, CommonModule],
   controllers: [UsersController, AdminUsersController, UsersInternalController],
   providers: [UsersService, ImageUploadService, UserSyncService],
   exports: [UsersService, UserSyncService],

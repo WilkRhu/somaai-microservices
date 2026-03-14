@@ -1,91 +1,118 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class MonolithService {
-  private monolithServiceUrl = process.env.MONOLITH_SERVICE_URL || 'http://localhost:3010';
+  private readonly logger = new Logger(MonolithService.name);
+  private monolithServiceUrl = process.env.MONOLITH_SERVICE_URL || 'http://localhost:3000';
 
   constructor(private httpService: HttpService) {}
 
-  async proxyRequest(method: string, path: string, data?: any, headers?: any) {
+  async proxyRequest(method: string, path: string, data?: any, authHeader?: string) {
     const url = `${this.monolithServiceUrl}${path}`;
 
     try {
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      } else {
+        this.logger.warn(`No authorization header provided for ${method} ${path}`);
+      }
+
+      this.logger.debug(`Proxying ${method} ${url} with headers: ${JSON.stringify(Object.keys(headers))}`);
+      if (authHeader) {
+        this.logger.debug(`Authorization header: ${authHeader.substring(0, 50)}...`);
+      }
+
       const response = await firstValueFrom(
         this.httpService.request({
           method: method.toLowerCase(),
           url,
           data,
-          headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-          },
-          timeout: 10000,
+          headers,
         }),
       );
 
       return response.data;
     } catch (error) {
-      console.error(`Error calling ${method} ${url}:`, error.message);
+      this.logger.error(`Proxy request failed: ${method} ${url} - ${error.message}`);
+      
       if (error.response) {
-        throw new Error(`Monolith service error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-      } else if (error.code === 'ECONNREFUSED') {
-        throw new Error(`Cannot connect to Monolith service at ${this.monolithServiceUrl}. Make sure it's running.`);
+        // Erro da resposta HTTP
+        throw new HttpException(
+          error.response.data || error.message,
+          error.response.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      } else if (error.request) {
+        // Erro na requisição (sem resposta)
+        this.logger.error(`No response from monolith: ${error.message}`);
+        throw new HttpException(
+          'Monolith service not responding',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
       } else {
-        throw new Error(`Monolith service error: ${error.message}`);
+        // Erro na configuração da requisição
+        throw new HttpException(
+          error.message,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
     }
   }
 
-  // Purchases
-  async createPurchase(data: any) {
-    return this.proxyRequest('POST', `/api/users/${data.userId}/purchases`, data);
+  // User Purchases
+  async getUserPurchases(userId: string, skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest(
+      'GET',
+      `/api/users/${userId}/purchases?skip=${skip || 0}&take=${take || 20}`,
+      undefined,
+      authHeader,
+    );
   }
 
-  async createPurchaseForUser(userId: string, data: any) {
-    // Não incluir userId no body, apenas na URL
-    return this.proxyRequest('POST', `/api/users/${userId}/purchases`, data);
+  async createPurchase(userId: string, data: any, authHeader?: string) {
+    return this.proxyRequest('POST', `/api/users/${userId}/purchases`, data, authHeader);
   }
 
-  async getPurchase(id: string) {
-    return this.proxyRequest('GET', `/api/purchases/${id}`);
+  async getPurchase(userId: string, purchaseId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/users/${userId}/purchases/${purchaseId}`, undefined, authHeader);
   }
 
-  async listPurchases(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/purchases?skip=${skip || 0}&take=${take || 20}`);
+  async updatePurchase(userId: string, purchaseId: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/users/${userId}/purchases/${purchaseId}`, data, authHeader);
   }
 
-  async listUserPurchases(userId: string, skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/users/${userId}/purchases?skip=${skip || 0}&take=${take || 20}`);
+  async deletePurchase(userId: string, purchaseId: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/users/${userId}/purchases/${purchaseId}`, undefined, authHeader);
   }
 
-  async updatePurchase(id: string, data: any) {
-    return this.proxyRequest('PATCH', `/api/purchases/${id}`, data);
+  // Direct Purchases Access
+  async listPurchases(skip?: number, take?: number, authHeader?: string) {
+    return this.proxyRequest(
+      'GET',
+      `/api/purchases?skip=${skip || 0}&take=${take || 20}`,
+      undefined,
+      authHeader,
+    );
   }
 
-  async deletePurchase(id: string) {
-    return this.proxyRequest('DELETE', `/api/purchases/${id}`);
+  async createPurchaseDirectly(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/purchases', data, authHeader);
   }
 
-  // Users
-  async createUser(data: any) {
-    return this.proxyRequest('POST', '/api/users', data);
+  async getPurchaseById(purchaseId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/purchases/${purchaseId}`, undefined, authHeader);
   }
 
-  async getUser(id: string) {
-    return this.proxyRequest('GET', `/api/users/${id}`);
+  async updatePurchaseById(purchaseId: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PUT', `/api/purchases/${purchaseId}`, data, authHeader);
   }
 
-  async listUsers(skip?: number, take?: number) {
-    return this.proxyRequest('GET', `/api/users?skip=${skip || 0}&take=${take || 20}`);
-  }
-
-  async updateUser(id: string, data: any) {
-    return this.proxyRequest('PATCH', `/api/users/${id}`, data);
-  }
-
-  async deleteUser(id: string) {
-    return this.proxyRequest('DELETE', `/api/users/${id}`);
+  async deletePurchaseById(purchaseId: string, authHeader?: string) {
+    return this.proxyRequest('DELETE', `/api/purchases/${purchaseId}`, undefined, authHeader);
   }
 }

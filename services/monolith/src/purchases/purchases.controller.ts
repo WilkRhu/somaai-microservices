@@ -7,13 +7,20 @@ import {
   Param,
   Body,
   Query,
+  UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { PurchaseResponseDto, PurchaseSummaryDto } from './dto/purchase-response.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { ValidateUserId } from '../common/decorators/validate-user-id.decorator';
 
 @ApiTags('Purchases')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('api/users/:userId/purchases')
 export class PurchasesController {
   constructor(private purchasesService: PurchasesService) {}
@@ -26,13 +33,11 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async createPurchase(
-    @Param('userId') userId: string,
+    @ValidateUserId('userId') userId: string,
     @Body() createPurchaseDto: CreatePurchaseDto,
   ): Promise<PurchaseResponseDto> {
-    // Remover userId do DTO se existir (pode vir do body)
-    const { userId: _, ...cleanData } = createPurchaseDto as any;
     return this.purchasesService.createPurchase({
-      ...cleanData,
+      ...createPurchaseDto,
       userId,
     } as CreatePurchaseDto & { userId: string });
   }
@@ -44,7 +49,7 @@ export class PurchasesController {
     description: 'Purchases list',
   })
   async listPurchases(
-    @Param('userId') userId: string,
+    @ValidateUserId('userId') userId: string,
     @Query('skip') skip: number = 0,
     @Query('take') take: number = 20,
   ): Promise<any> {
@@ -58,7 +63,7 @@ export class PurchasesController {
     description: 'Purchase summary',
     type: PurchaseSummaryDto,
   })
-  async getPurchaseSummary(@Param('userId') userId: string): Promise<PurchaseSummaryDto> {
+  async getPurchaseSummary(@ValidateUserId('userId') userId: string): Promise<PurchaseSummaryDto> {
     return this.purchasesService.getPurchaseSummary(userId);
   }
 
@@ -70,7 +75,7 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async getPurchaseById(
-    @Param('userId') userId: string,
+    @ValidateUserId('userId') userId: string,
     @Param('purchaseId') purchaseId: string,
   ): Promise<PurchaseResponseDto> {
     return this.purchasesService.getPurchaseById(userId, purchaseId);
@@ -84,7 +89,7 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async updatePurchase(
-    @Param('userId') userId: string,
+    @ValidateUserId('userId') userId: string,
     @Param('purchaseId') purchaseId: string,
     @Body() updateData: any,
   ): Promise<PurchaseResponseDto> {
@@ -95,7 +100,7 @@ export class PurchasesController {
   @ApiOperation({ summary: 'Delete purchase' })
   @ApiResponse({ status: 200, description: 'Purchase deleted' })
   async deletePurchase(
-    @Param('userId') userId: string,
+    @ValidateUserId('userId') userId: string,
     @Param('purchaseId') purchaseId: string,
   ): Promise<{ success: boolean }> {
     await this.purchasesService.deletePurchase(userId, purchaseId);

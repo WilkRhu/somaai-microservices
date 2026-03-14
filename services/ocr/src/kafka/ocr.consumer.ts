@@ -1,11 +1,18 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
 import { Kafka, Consumer } from 'kafkajs';
+import { OcrService } from '../ocr/ocr.service';
+import { OcrProducerService } from './ocr.producer';
 
 @Injectable()
 export class OcrConsumerService implements OnModuleInit, OnModuleDestroy {
   private kafka!: Kafka;
   private consumer!: Consumer;
   private readonly logger = new Logger(OcrConsumerService.name);
+
+  constructor(
+    private ocrService: OcrService,
+    private ocrProducerService: OcrProducerService,
+  ) {}
 
   async onModuleInit() {
     this.kafka = new Kafka({
@@ -45,7 +52,46 @@ export class OcrConsumerService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleOrderCreated(order: any) {
-    this.logger.log(`Processing OCR for order: ${order.id}`);
-    // Aqui você implementaria a lógica de OCR
+    try {
+      this.logger.log(`Processing OCR for order: ${order.id}`);
+
+      // Se o pedido contém uma imagem base64, processar com OCR
+      if (order.receiptImage || order.image || order.imageBase64) {
+        const imageData = order.receiptImage || order.image || order.imageBase64;
+        
+        const ocrResult = await this.ocrService.extractBase64({
+          imageBase64: imageData,
+          documentType: order.documentType || 'receipt',
+          language: order.language || 'por',
+        });
+
+        // Publicar resultado do OCR
+        await this.ocrProducerService.publishProcessingCompleted({
+          processingId: `ocr-${order.id}`,
+          orderId: order.id,
+          extractedData: ocrResult.extractedData,
+          text: ocrResult.text,
+          confidence: ocrResult.confidence,
+          documentType: ocrResult.documentType,
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+        });
+
+        this.logger.log(`OCR processing completed for order: ${order.id}`);
+      } else {
+        this.logger.warn(`No image data found in order: ${order.id}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error processing OCR for order ${order.id}: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Publicar falha
+      await this.ocrProducerService.publishProcessingFailed({
+        processingId: `ocr-${order.id}`,
+        orderId: order.id,
+        error: error instanceof Error ? error.message : String(error),
+        status: 'failed',
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

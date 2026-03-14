@@ -1,96 +1,127 @@
-# Script para testar criação de compra via Orquestrador
+# Purchase Creation Test Script
 
-$USER_ID = "e4bcb9a3-f93a-429e-87c7-88c2fcb4afcc"
-$TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNGJjYjlhMy1mOTNhLTQyOWUtODdjNy04OGMyZmNiNGFmY2MiLCJlbWFpbCI6IndpbGsuY2FldGFub0BnbWFpbC5jb20iLCJpYXQiOjE3NzM0NTYwMzUsImV4cCI6MTc3MzQ1NjAzOH0.1Iq4YL8L1EPkV7gE7iERWwRAKZ6f9tTNog_GGM6oOIo"
+# Configuration
+$AUTH_URL = "http://localhost:3010"
+$ORCHESTRATOR_URL = "http://localhost:3009"
+$MONOLITH_URL = "http://localhost:3000"
 
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Teste de Criação de Compra" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
+# Test credentials
+$TEST_EMAIL = "test@example.com"
+$TEST_PASSWORD = "Test@123456"
+
+Write-Host "=== Purchase Creation Test ===" -ForegroundColor Yellow
 Write-Host ""
 
-# Teste 1: Criar compra via Orquestrador
-Write-Host "1. Criando compra via Orquestrador..." -ForegroundColor Yellow
-Write-Host "URL: http://localhost:3009/api/monolith/purchases" -ForegroundColor Gray
+# Step 1: Register user
+Write-Host "Step 1: Registering user..." -ForegroundColor Yellow
+
+$registerBody = @{
+    email = $TEST_EMAIL
+    password = $TEST_PASSWORD
+    firstName = "Test"
+    lastName = "User"
+} | ConvertTo-Json
+
+$registerResponse = Invoke-WebRequest -Uri "$AUTH_URL/api/auth/register" `
+    -Method POST `
+    -Headers @{"Content-Type" = "application/json"} `
+    -Body $registerBody
+
+$registerData = $registerResponse.Content | ConvertFrom-Json
+
+Write-Host "Response:" -ForegroundColor Cyan
+$registerData | ConvertTo-Json | Write-Host
+
+# Extract token and user ID
+$ACCESS_TOKEN = $registerData.accessToken
+$USER_ID = $registerData.user.id
+
+if (-not $ACCESS_TOKEN) {
+    Write-Host "Failed to get access token" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "✓ Got access token: $($ACCESS_TOKEN.Substring(0, 20))..." -ForegroundColor Green
+Write-Host "✓ User ID: $USER_ID" -ForegroundColor Green
 Write-Host ""
 
-$payload = @{
+# Step 2: Create purchase via orchestrator
+Write-Host "Step 2: Creating purchase via orchestrator..." -ForegroundColor Yellow
+
+$purchasePayload = @{
     type = "market"
-    amount = 2.5
-    merchant = "Teste"
-    paymentMethod = "cash"
-    purchasedAt = "2026-03-14T02:40:00.000Z"
+    merchant = "Supermercado Extra"
+    amount = 150.50
+    paymentMethod = "pix"
+    purchasedAt = "2026-03-14T17:00:00.000Z"
+    description = "Compras da semana"
     items = @(
         @{
             name = "Arroz"
-            quantity = 1
-            unit = "un"
-            unitPrice = 2.5
-        }
-    )
-    products = @(
+            quantity = 2
+            unit = "kg"
+            unitPrice = 8.50
+        },
         @{
-            name = "Arroz"
+            name = "Feijão"
             quantity = 1
-            unit = "un"
-            unitPrice = 2.5
+            unit = "kg"
+            unitPrice = 12.00
         }
     )
-} | ConvertTo-Json
+} | ConvertTo-Json -Depth 10
+
+Write-Host "Payload:" -ForegroundColor Cyan
+$purchasePayload | Write-Host
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3009/api/monolith/purchases" `
+    $purchaseResponse = Invoke-WebRequest -Uri "$ORCHESTRATOR_URL/api/monolith/users/$USER_ID/purchases" `
         -Method POST `
         -Headers @{
-            "Authorization" = "Bearer $TOKEN"
             "Content-Type" = "application/json"
+            "Authorization" = "Bearer $ACCESS_TOKEN"
         } `
-        -Body $payload `
-        -ErrorAction Stop
+        -Body $purchasePayload
 
-    Write-Host "✓ Sucesso! Status: $($response.StatusCode)" -ForegroundColor Green
-    Write-Host "Resposta:" -ForegroundColor Green
-    $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10 | Write-Host
-} catch {
-    Write-Host "✗ Erro! Status: $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
-    if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $reader.BaseStream.Position = 0
-        $reader.DiscardBufferedData()
-        Write-Host $reader.ReadToEnd() -ForegroundColor Red
+    $purchaseData = $purchaseResponse.Content | ConvertFrom-Json
+
+    Write-Host ""
+    Write-Host "Response:" -ForegroundColor Cyan
+    $purchaseData | ConvertTo-Json | Write-Host
+
+    if ($purchaseData.id) {
+        Write-Host "✓ Purchase created successfully" -ForegroundColor Green
+        $PURCHASE_ID = $purchaseData.id
+        Write-Host "✓ Purchase ID: $PURCHASE_ID" -ForegroundColor Green
+        Write-Host ""
+    } else {
+        Write-Host "✗ Failed to create purchase" -ForegroundColor Red
+        exit 1
     }
+} catch {
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Response: $($_.Exception.Response.Content)" -ForegroundColor Red
+    exit 1
 }
 
-Write-Host ""
-Write-Host ""
-Write-Host "2. Listando compras do usuário..." -ForegroundColor Yellow
-Write-Host "URL: http://localhost:3009/api/monolith/users/$USER_ID/purchases" -ForegroundColor Gray
-Write-Host ""
+# Step 3: Get purchase
+Write-Host "Step 3: Getting purchase..." -ForegroundColor Yellow
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3009/api/monolith/users/$USER_ID/purchases" `
+    $getResponse = Invoke-WebRequest -Uri "$ORCHESTRATOR_URL/api/monolith/users/$USER_ID/purchases/$PURCHASE_ID" `
         -Method GET `
         -Headers @{
-            "Authorization" = "Bearer $TOKEN"
-            "Content-Type" = "application/json"
-        } `
-        -ErrorAction Stop
+            "Authorization" = "Bearer $ACCESS_TOKEN"
+        }
 
-    Write-Host "✓ Sucesso! Status: $($response.StatusCode)" -ForegroundColor Green
-    Write-Host "Resposta:" -ForegroundColor Green
-    $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10 | Write-Host
+    $getData = $getResponse.Content | ConvertFrom-Json
+
+    Write-Host "Response:" -ForegroundColor Cyan
+    $getData | ConvertTo-Json | Write-Host
 } catch {
-    Write-Host "✗ Erro! Status: $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
-    if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $reader.BaseStream.Position = 0
-        $reader.DiscardBufferedData()
-        Write-Host $reader.ReadToEnd() -ForegroundColor Red
-    }
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Response: $($_.Exception.Response.Content)" -ForegroundColor Red
 }
 
 Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Teste concluído" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "=== Test completed successfully ===" -ForegroundColor Green
