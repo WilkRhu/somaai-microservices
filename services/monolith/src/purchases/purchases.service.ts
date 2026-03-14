@@ -1,77 +1,233 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { PurchaseResponseDto, PurchaseSummaryDto } from './dto/purchase-response.dto';
+import { KafkaService } from '../kafka/kafka.service';
+import { Purchase } from './entities/purchase.entity';
+import { PurchaseItem } from './entities/purchase-item.entity';
 
 @Injectable()
 export class PurchasesService {
-  // Mock data
-  private mockPurchases: PurchaseResponseDto[] = [
-    {
-      id: '1',
-      userId: 'user-1',
-      merchant: 'Supermercado XYZ',
-      description: 'Compra de alimentos',
-      amount: 150.50,
-      paymentMethod: 'pix',
-      purchasedAt: new Date('2024-03-10'),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '2',
-      userId: 'user-1',
-      merchant: 'Farmácia ABC',
-      description: 'Medicamentos',
-      amount: 89.90,
-      paymentMethod: 'card',
-      purchasedAt: new Date('2024-03-09'),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
+  constructor(
+    @InjectRepository(Purchase)
+    private purchaseRepository: Repository<Purchase>,
+    @InjectRepository(PurchaseItem)
+    private purchaseItemRepository: Repository<PurchaseItem>,
+    private httpService: HttpService,
+    private kafkaService: KafkaService,
+  ) {}
 
-  async createPurchase(createPurchaseDto: CreatePurchaseDto): Promise<PurchaseResponseDto> {
-    const purchase: PurchaseResponseDto = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...createPurchaseDto,
-      purchasedAt: new Date(createPurchaseDto.purchasedAt),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  async createPurchase(createPurchaseDto: CreatePurchaseDto & { userId: string }): Promise<PurchaseResponseDto> {
+    try {
+      // Transformar purchase em sale para o orquestrador
+      const saleData = {
+        userId: createPurchaseDto.userId,
+        type: createPurchaseDto.type,
+        merchant: createPurchaseDto.merchant,
+        description: createPurchaseDto.description || `Purchase from ${createPurchaseDto.merchant}`,
+        amount: createPurchaseDto.amount,
+        paymentMethod: createPurchaseDto.paymentMethod,
+        purchasedAt: createPurchaseDto.purchasedAt,
+        items: createPurchaseDto.items || createPurchaseDto.products || [],
+        installments: createPurchaseDto.installments || 1,
+      };
 
-    this.mockPurchases.push(purchase);
-    return purchase;
+      try {
+        // Tentar fazer requisição para o orquestrador
+        const response = await firstValueFrom(
+          this.httpService.post(
+            `${process.env.ORCHESTRATOR_SERVICE_URL}/api/business/sales`,
+            saleData,
+          ),
+        );
+
+        // Transformar a resposta do orquestrador em PurchaseResponseDto
+        const sale = response.data;
+        
+        // Salvar no banco de dados
+        const purchase = this.purchaseRepository.create({
+          id: sale.id,
+          userId: sale.userId,
+          type: sale.type,
+          merchant: sale.merchant,
+          description: sale.description,
+          totalAmount: sale.amount,
+          paymentMethod: sale.paymentMethod,
+          purchasedAt: new Date(sale.purchasedAt),
+          installments: sale.installments || 1,
+          status: 'COMPLETED',
+        });
+
+        const savedPurchase = await this.purchaseRepository.save(purchase);
+
+        // Salvar itens se existirem
+        if (sale.items && sale.items.length > 0) {
+          const items = sale.items.map((item: any) =>
+            this.purchaseItemRepository.create({
+              purchaseId: savedPurchase.id,
+              productName: item.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: (item.quantity * item.unitPrice),
+            }),
+          );
+          await this.purchaseItemRepository.save(items);
+        }
+
+        const purchaseResponse: PurchaseResponseDto = {
+          id: savedPurchase.id,
+          userId: savedPurchase.userId,
+          type: savedPurchase.type,
+          merchant: savedPurchase.merchant,
+          description: savedPurchase.description,
+          amount: savedPurchase.totalAmount,
+          paymentMethod: savedPurchase.paymentMethod,
+          purchasedAt: savedPurchase.purchasedAt,
+          items: sale.items || [],
+          products: sale.items || [],
+          installments: savedPurchase.installments,
+          createdAt: savedPurchase.createdAt,
+          updatedAt: savedPurchase.updatedAt,
+        };
+
+        // Publicar evento no Kafka para notificar outros serviços
+        await this.kafkaService.publishPurchaseCreated(purchaseResponse);
+
+        return purchaseResponse;
+      } catch (orchestratorError) {
+        console.warn(`Orchestrator call failed: ${orchestratorError.message}. Saving to database directly.`);
+        
+        // Se o orquestrador falhar, salvar diretamente no banco
+        const purchase = this.purchaseRepository.create({
+          userId: createPurchaseDto.userId,
+          type: createPurchaseDto.type,
+          merchant: createPurchaseDto.merchant,
+          description: createPurchaseDto.description || `Purchase from ${createPurchaseDto.merchant}`,
+          totalAmount: createPurchaseDto.amount,
+          paymentMethod: createPurchaseDto.paymentMethod,
+          purchasedAt: new Date(createPurchaseDto.purchasedAt),
+          installments: createPurchaseDto.installments || 1,
+          status: 'COMPLETED',
+        });
+
+        const savedPurchase = await this.purchaseRepository.save(purchase);
+
+        // Salvar itens se existirem
+        if (createPurchaseDto.items && createPurchaseDto.items.length > 0) {
+          const items = createPurchaseDto.items.map((item) =>
+            this.purchaseItemRepository.create({
+              purchaseId: savedPurchase.id,
+              productName: item.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: (item.quantity * item.unitPrice),
+            }),
+          );
+          await this.purchaseItemRepository.save(items);
+        }
+
+        const purchaseResponse: PurchaseResponseDto = {
+          id: savedPurchase.id,
+          userId: savedPurchase.userId,
+          type: savedPurchase.type,
+          merchant: savedPurchase.merchant,
+          description: savedPurchase.description,
+          amount: savedPurchase.totalAmount,
+          paymentMethod: savedPurchase.paymentMethod,
+          purchasedAt: savedPurchase.purchasedAt,
+          items: createPurchaseDto.items || [],
+          products: createPurchaseDto.products || [],
+          installments: savedPurchase.installments,
+          createdAt: savedPurchase.createdAt,
+          updatedAt: savedPurchase.updatedAt,
+        };
+
+        // Publicar evento no Kafka mesmo assim
+        await this.kafkaService.publishPurchaseCreated(purchaseResponse);
+
+        return purchaseResponse;
+      }
+    } catch (error) {
+      throw new HttpException(
+        `Failed to create purchase: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   async listPurchases(userId: string, skip: number = 0, take: number = 20): Promise<any> {
-    const userPurchases = this.mockPurchases.filter((p) => p.userId === userId);
+    const [items, total] = await this.purchaseRepository.findAndCount({
+      where: { userId },
+      skip,
+      take,
+      relations: ['items'],
+      order: { purchasedAt: 'DESC' },
+    });
 
     return {
-      items: userPurchases.slice(skip, skip + take),
-      total: userPurchases.length,
+      items: items.map((p) => ({
+        id: p.id,
+        userId: p.userId,
+        type: p.type,
+        merchant: p.merchant,
+        description: p.description,
+        amount: p.totalAmount,
+        paymentMethod: p.paymentMethod,
+        purchasedAt: p.purchasedAt,
+        items: p.items,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })),
+      total,
       skip,
       take,
     };
   }
 
   async getPurchaseSummary(userId: string): Promise<PurchaseSummaryDto> {
-    const userPurchases = this.mockPurchases.filter((p) => p.userId === userId);
-    const totalSpent = userPurchases.reduce((sum, p) => sum + p.amount, 0);
+    const purchases = await this.purchaseRepository.find({
+      where: { userId },
+      order: { purchasedAt: 'DESC' },
+    });
+
+    const totalSpent = purchases.reduce((sum, p) => sum + Number(p.totalAmount), 0);
 
     return {
       totalSpent,
-      averageSpent: userPurchases.length > 0 ? totalSpent / userPurchases.length : 0,
-      totalPurchases: userPurchases.length,
-      lastPurchaseDate: userPurchases[0]?.purchasedAt,
-      topMerchant: userPurchases[0]?.merchant,
+      averageSpent: purchases.length > 0 ? totalSpent / purchases.length : 0,
+      totalPurchases: purchases.length,
+      lastPurchaseDate: purchases[0]?.purchasedAt,
+      topMerchant: purchases[0]?.merchant,
       topCategory: 'Alimentos',
     };
   }
 
   async getPurchaseById(userId: string, purchaseId: string): Promise<PurchaseResponseDto> {
-    return this.mockPurchases.find(
-      (p) => p.id === purchaseId && p.userId === userId,
-    ) || null;
+    const purchase = await this.purchaseRepository.findOne({
+      where: { id: purchaseId, userId },
+      relations: ['items'],
+    });
+
+    if (!purchase) {
+      return null;
+    }
+
+    return {
+      id: purchase.id,
+      userId: purchase.userId,
+      type: purchase.type,
+      merchant: purchase.merchant,
+      description: purchase.description,
+      amount: purchase.totalAmount,
+      paymentMethod: purchase.paymentMethod,
+      purchasedAt: purchase.purchasedAt,
+      items: purchase.items,
+      createdAt: purchase.createdAt,
+      updatedAt: purchase.updatedAt,
+    };
   }
 
   async updatePurchase(
@@ -79,24 +235,42 @@ export class PurchasesService {
     purchaseId: string,
     updateData: any,
   ): Promise<PurchaseResponseDto> {
-    const purchase = this.mockPurchases.find(
-      (p) => p.id === purchaseId && p.userId === userId,
-    );
+    const purchase = await this.purchaseRepository.findOne({
+      where: { id: purchaseId, userId },
+      relations: ['items'],
+    });
 
-    if (purchase) {
-      Object.assign(purchase, updateData, { updatedAt: new Date() });
+    if (!purchase) {
+      throw new HttpException('Purchase not found', HttpStatus.NOT_FOUND);
     }
 
-    return purchase;
+    Object.assign(purchase, updateData);
+    const updated = await this.purchaseRepository.save(purchase);
+
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      type: updated.type,
+      merchant: updated.merchant,
+      description: updated.description,
+      amount: updated.totalAmount,
+      paymentMethod: updated.paymentMethod,
+      purchasedAt: updated.purchasedAt,
+      items: updated.items,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   async deletePurchase(userId: string, purchaseId: string): Promise<void> {
-    const index = this.mockPurchases.findIndex(
-      (p) => p.id === purchaseId && p.userId === userId,
-    );
+    const purchase = await this.purchaseRepository.findOne({
+      where: { id: purchaseId, userId },
+    });
 
-    if (index > -1) {
-      this.mockPurchases.splice(index, 1);
+    if (!purchase) {
+      throw new HttpException('Purchase not found', HttpStatus.NOT_FOUND);
     }
+
+    await this.purchaseRepository.remove(purchase);
   }
 }

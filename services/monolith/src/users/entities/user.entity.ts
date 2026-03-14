@@ -12,7 +12,6 @@ import { UserCard } from './user-card.entity';
 import { Purchase } from '../../purchases/entities/purchase.entity';
 
 @Entity('users')
-@Index(['email'], { unique: true })
 @Index(['cpf'], { unique: true, where: 'cpf IS NOT NULL' })
 export class User {
   @PrimaryGeneratedColumn('uuid')

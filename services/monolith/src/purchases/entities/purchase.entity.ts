@@ -25,8 +25,8 @@ export class Purchase {
 
   @Column({
     type: 'enum',
-    enum: ['PRODUCT', 'SERVICE'],
-    default: 'PRODUCT',
+    enum: ['market', 'loja', 'shopping', 'outros', 'listacompras', 'Compras Online'],
+    default: 'market',
   })
   type: string;
 
@@ -48,7 +48,7 @@ export class Purchase {
 
   @Column({
     type: 'enum',
-    enum: ['CASH', 'CARD', 'PIX', 'BOLETO', 'TRANSFER'],
+    enum: ['pix', 'credit_card', 'debit_card', 'cash', 'bank_slip', 'bank_transfer', 'voucher', 'other'],
     nullable: true,
   })
   paymentMethod: string;

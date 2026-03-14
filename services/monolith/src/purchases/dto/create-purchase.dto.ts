@@ -1,9 +1,29 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsEnum } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsEnum, ValidateNested, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../shared/enums/payment-method.enum';
+import { PurchaseType } from '../enums/purchase-type.enum';
+
+export class PurchaseItemDto {
+  @IsString()
+  name: string;
+
+  @IsNumber()
+  quantity: number;
+
+  @IsString()
+  unit: string;
+
+  @IsNumber()
+  unitPrice: number;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+}
 
 export class CreatePurchaseDto {
-  @IsString()
-  userId: string;
+  @IsEnum(PurchaseType)
+  type: PurchaseType;
 
   @IsString()
   merchant: string;
@@ -18,14 +38,22 @@ export class CreatePurchaseDto {
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
 
-  @IsString()
+  @IsDateString()
   purchasedAt: string;
 
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PurchaseItemDto)
   @IsOptional()
-  items?: any[];
+  items?: PurchaseItemDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PurchaseItemDto)
+  @IsOptional()
+  products?: PurchaseItemDto[];
 
   @IsNumber()
   @IsOptional()
-  installments?: number;
+  installments?: number = 1;
 }

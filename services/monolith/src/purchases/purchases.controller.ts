@@ -29,10 +29,12 @@ export class PurchasesController {
     @Param('userId') userId: string,
     @Body() createPurchaseDto: CreatePurchaseDto,
   ): Promise<PurchaseResponseDto> {
+    // Remover userId do DTO se existir (pode vir do body)
+    const { userId: _, ...cleanData } = createPurchaseDto as any;
     return this.purchasesService.createPurchase({
-      ...createPurchaseDto,
+      ...cleanData,
       userId,
-    });
+    } as CreatePurchaseDto & { userId: string });
   }
 
   @Get()

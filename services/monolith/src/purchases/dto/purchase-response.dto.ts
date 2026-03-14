@@ -1,12 +1,14 @@
 export class PurchaseResponseDto {
   id: string;
   userId: string;
+  type: string;
   merchant: string;
   description?: string;
   amount: number;
   paymentMethod: string;
   purchasedAt: Date;
   items?: any[];
+  products?: any[];
   installments?: number;
   createdAt: Date;
   updatedAt: Date;

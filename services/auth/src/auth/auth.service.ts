@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,13 +15,19 @@ import { RegisterDto } from './dto/register.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { KafkaService } from '../kafka/kafka.service';
+import { MonolithSyncService } from '../common/services/monolith-sync.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
+    private kafkaService: KafkaService,
+    private monolithSyncService: MonolithSyncService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -54,6 +61,25 @@ export class AuthService {
 
     const savedUser = await this.usersRepository.save(user);
 
+    // Sincronizar com monolith se não houver referência a business
+    try {
+      await this.monolithSyncService.syncUserToMonolith(savedUser);
+      this.logger.log(`Synced user ${savedUser.id} to monolith`);
+    } catch (error) {
+      this.logger.error(`Failed to sync user to monolith: ${error.message}`);
+      // Não falhar o registro se a sincronização falhar
+    }
+
+    // Publicar evento Kafka
+    try {
+      await this.kafkaService.publishUserCreated(savedUser);
+      await this.kafkaService.publishRegistrationSuccess(savedUser);
+      this.logger.log(`Published user.created event for user: ${savedUser.id}`);
+    } catch (error) {
+      this.logger.error(`Failed to publish Kafka event for user creation: ${error.message}`);
+      // Não falhar o registro se o Kafka falhar
+    }
+
     // Generate tokens
     const tokens = this.generateTokens(savedUser);
 
@@ -79,6 +105,12 @@ export class AuthService {
     });
 
     if (!user) {
+      // Publicar evento de falha de login
+      try {
+        await this.kafkaService.publishLoginFailed(email, 'User not found');
+      } catch (error) {
+        this.logger.error(`Failed to publish login failed event: ${error.message}`);
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -86,6 +118,12 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      // Publicar evento de falha de login
+      try {
+        await this.kafkaService.publishLoginFailed(email, 'Invalid password');
+      } catch (error) {
+        this.logger.error(`Failed to publish login failed event: ${error.message}`);
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -99,6 +137,13 @@ export class AuthService {
 
     // Generate tokens
     const tokens = this.generateTokens(user);
+
+    // Publicar evento de login bem-sucedido
+    try {
+      await this.kafkaService.publishLoginSuccess(user);
+    } catch (error) {
+      this.logger.error(`Failed to publish login success event: ${error.message}`);
+    }
 
     return {
       accessToken: tokens.accessToken,
@@ -126,6 +171,8 @@ export class AuthService {
       where: { email },
     });
 
+    const isNewUser = !user;
+
     if (user) {
       // User exists, update Google ID if not set
       if (!user.googleId) {
@@ -150,6 +197,27 @@ export class AuthService {
       });
 
       user = await this.usersRepository.save(user);
+
+      // Sincronizar novo usuário com monolith
+      try {
+        await this.monolithSyncService.syncUserToMonolith(user);
+        this.logger.log(`Synced Google user ${user.id} to monolith`);
+      } catch (error) {
+        this.logger.error(`Failed to sync Google user to monolith: ${error.message}`);
+        // Não falhar o login se a sincronização falhar
+      }
+    }
+
+    // Publicar eventos Kafka
+    try {
+      if (isNewUser) {
+        await this.kafkaService.publishUserCreated(user);
+        await this.kafkaService.publishRegistrationSuccess(user);
+        this.logger.log(`Published user.created event for Google user: ${user.id}`);
+      }
+      await this.kafkaService.publishLoginSuccess(user);
+    } catch (error) {
+      this.logger.error(`Failed to publish Kafka events for Google login: ${error.message}`);
     }
 
     // Generate tokens

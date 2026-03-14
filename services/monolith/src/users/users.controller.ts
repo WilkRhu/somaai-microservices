@@ -7,23 +7,31 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
   Request,
   Query,
+  Headers,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { UserSyncService } from './services/user-sync.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { OnboardingDto, OnboardingStatusDto } from './dto/onboarding.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { SyncFromAuthDto } from './dto/sync-from-auth.dto';
+import { User } from './entities/user.entity';
 
 @ApiTags('Users')
 @Controller('api/users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private userSyncService: UserSyncService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create new user' })
@@ -121,6 +129,20 @@ export class UsersController {
   })
   async getOnboardingStatus(@Param('id') userId: string): Promise<OnboardingStatusDto> {
     return this.usersService.getOnboardingStatus(userId);
+  }
+
+  @Get(':id/purchases')
+  @ApiOperation({ summary: 'Get user purchases' })
+  @ApiResponse({
+    status: 200,
+    description: 'User purchases',
+  })
+  async getUserPurchases(
+    @Param('id') userId: string,
+    @Query('skip') skip: number = 0,
+    @Query('take') take: number = 20,
+  ): Promise<any> {
+    return this.usersService.getUserPurchases(userId, skip, take);
   }
 
   @Post(':id/onboarding/complete')
@@ -224,5 +246,76 @@ export class AdminUsersController {
     @Body() body: { role: string },
   ): Promise<UserResponseDto> {
     return this.usersService.updateUserRole(userId, body.role);
+  }
+}
+
+
+/**
+ * Internal routes for service-to-service communication
+ * These routes are protected by X-Internal-Service header
+ */
+@ApiTags('Internal')
+@Controller('api/users/internal')
+export class UsersInternalController {
+  constructor(private userSyncService: UserSyncService) {}
+
+  /**
+   * Sincroniza um usuário criado no auth com o monolith
+   * Rota interna protegida por header X-Internal-Service
+   */
+  @Post('sync-from-auth')
+  @ApiOperation({ summary: 'Sync user from auth service (INTERNAL)' })
+  @ApiResponse({
+    status: 201,
+    description: 'User synced successfully',
+    type: User,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid internal service header' })
+  async syncUserFromAuth(
+    @Body() syncDto: SyncFromAuthDto,
+    @Headers('x-internal-service') internalService: string,
+  ): Promise<User> {
+    // Validar header de serviço interno
+    if (internalService !== 'auth-service') {
+      throw new HttpException(
+        'Unauthorized - Invalid internal service',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return this.userSyncService.syncUserFromAuth(syncDto);
+  }
+
+  /**
+   * Verifica se um usuário existe no monolith
+   * Rota interna protegida por header X-Internal-Service
+   */
+  @Get('check/:userId')
+  @ApiOperation({ summary: 'Check if user exists (INTERNAL)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User exists',
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid internal service header' })
+  async checkUserExists(
+    @Param('userId') userId: string,
+    @Headers('x-internal-service') internalService: string,
+  ): Promise<{ exists: boolean }> {
+    // Validar header de serviço interno
+    if (internalService !== 'auth-service') {
+      throw new HttpException(
+        'Unauthorized - Invalid internal service',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const exists = await this.userSyncService.checkUserExists(userId);
+
+    if (!exists) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    return { exists: true };
   }
 }

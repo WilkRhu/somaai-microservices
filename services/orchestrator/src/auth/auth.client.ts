@@ -46,8 +46,11 @@ export class AuthClient {
         lastName,
       });
       return response.data;
-    } catch (error) {
-      throw new Error(`Registration failed: ${error.message}`);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message;
+      const errorDetails = error.response?.data || {};
+      console.error('Registration error details:', errorDetails);
+      throw new Error(`Registration failed: ${errorMessage}`);
     }
   }
 

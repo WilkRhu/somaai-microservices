@@ -1,4 +1,8 @@
 export enum PurchaseType {
-  PRODUCT = 'PRODUCT',
-  SERVICE = 'SERVICE',
+  MARKET = 'market',
+  LOJA = 'loja',
+  SHOPPING = 'shopping',
+  OUTROS = 'outros',
+  LISTACOMPRAS = 'listacompras',
+  COMPRAS_ONLINE = 'Compras Online',
 }

@@ -6,6 +6,8 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from './entities/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { KafkaModule } from '../kafka/kafka.module';
+import { ServicesModule } from '../common/services/services.module';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '3600s' },
     }),
+    KafkaModule,
+    ServicesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

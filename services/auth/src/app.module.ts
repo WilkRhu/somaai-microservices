@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -11,6 +13,7 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    HttpModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST || 'localhost',
@@ -23,6 +26,7 @@ import { AppService } from './app.service';
       logging: process.env.DB_LOGGING === 'true',
     }),
     AuthModule,
+    KafkaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

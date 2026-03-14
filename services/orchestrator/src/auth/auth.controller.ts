@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthClient } from './auth.client';
 
@@ -24,18 +24,29 @@ export class AuthController {
     description: 'User registered successfully',
   })
   async register(
-    @Body() registerDto: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-    },
+    @Body() registerDto: any,
   ) {
+    // Handle both formats: firstName/lastName or name
+    let firstName = registerDto.firstName;
+    let lastName = registerDto.lastName;
+
+    if (!firstName || !lastName) {
+      // Split name if provided
+      const nameParts = registerDto.name?.split(' ') || [];
+      firstName = firstName || nameParts[0] || '';
+      lastName = lastName || nameParts.slice(1).join(' ') || '';
+    }
+
+    // Validate required fields
+    if (!registerDto.email || !registerDto.password || !firstName || !lastName) {
+      throw new BadRequestException('Missing required fields: email, password, firstName, lastName');
+    }
+
     return this.authClient.register(
       registerDto.email,
       registerDto.password,
-      registerDto.firstName,
-      registerDto.lastName,
+      firstName,
+      lastName,
     );
   }
 

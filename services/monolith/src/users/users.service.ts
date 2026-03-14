@@ -28,12 +28,17 @@ export class UsersService {
         );
       }
 
+      // Split name into firstName and lastName if needed
+      const nameParts = createUserDto.name?.split(' ') || ['', ''];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       const userPayload = {
-        name: createUserDto.name,
         email: createUserDto.email,
         password: createUserDto.password,
+        firstName,
+        lastName,
         phone: createUserDto.phone,
-        role: createUserDto.role,
         profileImageUrl,
       };
 
@@ -182,6 +187,17 @@ export class UsersService {
         cardComplete: false,
         onboardingComplete: false,
       },
+    };
+  }
+
+  async getUserPurchases(userId: string, skip: number = 0, take: number = 20): Promise<any> {
+    // This would typically call the Purchases Service or query the database
+    // For now, returning mock data
+    return {
+      items: [],
+      total: 0,
+      skip,
+      take,
     };
   }
 

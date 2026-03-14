@@ -3,103 +3,28 @@ services:
   
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
+    ports: 
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
     networks:
       - somaai-network
-    healthcheck:
-      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka-1:
+  
+  kafka: 
     image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-1
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    environment:
+    ports: 
+      - "9092:9092"
+    environment: 
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://kafka-1:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    ports:
-      - "9092:9092"
-    networks:
-      - somaai-network
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka-2:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-2
     depends_on:
-      zookeeper:
-        condition: service_healthy
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:29092,PLAINTEXT_HOST://kafka-2:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-    ports:
-      - "9093:9093"
-    networks:
-      - somaai-network
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9093"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka-3:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-3
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:29092,PLAINTEXT_HOST://kafka-3:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-    ports:
-      - "9094:9094"
-    networks:
-      - somaai-network
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9094"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
-    environment:
-      KAFKA_CLUSTERS_0_NAME: somaai
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    ports:
-      - "8080:8080"
+      - zookeeper
     networks:
       - somaai-network
 
@@ -146,18 +71,19 @@ services:
       dockerfile: Dockerfile
     container_name: auth-service
     ports:
-      - "3000:3000"
+      - "3010:3010"
     environment:
       NODE_ENV: production
+      PORT: 3010
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -175,8 +101,8 @@ services:
       PORT: 3009
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
-      AUTH_SERVICE_URL: http://auth:3000
+      KAFKA_BROKERS: kafka:9092
+      AUTH_SERVICE_URL: http://auth:3010
       BUSINESS_SERVICE_URL: http://business:3011
       SALES_SERVICE_URL: http://sales:3001
       INVENTORY_SERVICE_URL: http://inventory:3002
@@ -186,7 +112,7 @@ services:
       FISCAL_SERVICE_URL: http://fiscal:3006
       OCR_SERVICE_URL: http://ocr:3007
       PAYMENTS_SERVICE_URL: http://payments:3008
-      MONOLITH_SERVICE_URL: http://monolith:3010
+      MONOLITH_SERVICE_URL: http://monolith:3000
       EMAIL_SERVICE_URL: http://email:3012
       UPLOAD_SERVICE_URL: http://upload:3008
     depends_on:
@@ -194,7 +120,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -212,13 +138,13 @@ services:
       PORT: 3011
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -236,13 +162,13 @@ services:
       PORT: 3001
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -260,13 +186,13 @@ services:
       PORT: 3002
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -284,13 +210,13 @@ services:
       PORT: 3003
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -308,13 +234,13 @@ services:
       PORT: 3004
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -332,13 +258,13 @@ services:
       PORT: 3005
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -356,13 +282,13 @@ services:
       PORT: 3006
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -380,13 +306,13 @@ services:
       PORT: 3007
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -404,13 +330,13 @@ services:
       PORT: 3008
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -422,20 +348,20 @@ services:
       dockerfile: Dockerfile
     container_name: monolith-service
     ports:
-      - "3010:3010"
+      - "3000:3000"
     environment:
       NODE_ENV: production
-      PORT: 3010
+      PORT: 3000
       DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
       UPLOAD_SERVICE_URL: http://upload:3008
     depends_on:
       mysql-master:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network
@@ -452,7 +378,7 @@ services:
       NODE_ENV: production
       PORT: 3012
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_BROKERS: kafka:9092
       EMAIL_PROVIDER: sendgrid
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-your-sendgrid-api-key}
       SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
@@ -464,7 +390,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      kafka-1:
+      kafka:
         condition: service_healthy
     networks:
       - somaai-network

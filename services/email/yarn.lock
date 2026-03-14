@@ -944,13 +944,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/handlebars@^4.1.0":
-  version "4.1.0"
-  resolved "https://registry.npmjs.org/@types/handlebars/-/handlebars-4.1.0.tgz"
-  integrity sha512-gq9YweFKNNB1uFK71eRqsd4niVkXrxHugqWFQkeLRJvGjnxsLr16bYtcsG4tOFwmYi0Bax+wCkbf1reUfdl4kA==
-  dependencies:
-    handlebars "*"
-
 "@types/http-errors@*":
   version "2.0.5"
   resolved "https://registry.npmjs.org/@types/http-errors/-/http-errors-2.0.5.tgz"
@@ -2713,7 +2706,7 @@ graphemer@^1.4.0:
   resolved "https://registry.npmjs.org/graphemer/-/graphemer-1.4.0.tgz"
   integrity sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==
 
-handlebars@*, handlebars@^4.7.0, handlebars@^4.7.8:
+handlebars@^4.7.0, handlebars@^4.7.8:
   version "4.7.8"
   resolved "https://registry.npmjs.org/handlebars/-/handlebars-4.7.8.tgz"
   integrity sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==
@@ -3487,6 +3480,11 @@ jsonfile@^6.0.1:
     universalify "^2.0.0"
   optionalDependencies:
     graceful-fs "^4.1.6"
+
+kafkajs@^2.2.4:
+  version "2.2.4"
+  resolved "https://registry.npmjs.org/kafkajs/-/kafkajs-2.2.4.tgz"
+  integrity sha512-j/YeapB1vfPT2iOIUn/vxdyKEuhuY2PxMBvf5JWux6iSaukAccrMtXEY/Lb7OvavDhOWME589bpLrEdnVHjfjA==
 
 keyv@^4.5.3:
   version "4.5.4"

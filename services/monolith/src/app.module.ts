@@ -9,6 +9,8 @@ import { ProductsModule } from './products/products.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { EstablishmentsModule } from './establishments/establishments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { KafkaModule } from './kafka/kafka.module';
+import { MonolithConsumerService } from './kafka/monolith.consumer';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
       logging: process.env.DB_LOGGING === 'true',
     }),
     HttpModule,
+    KafkaModule,
     UsersModule,
     ProductsModule,
     PurchasesModule,
@@ -35,6 +38,6 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     SubscriptionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, MonolithConsumerService],
 })
 export class AppModule {}

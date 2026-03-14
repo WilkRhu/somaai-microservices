@@ -21,18 +21,31 @@ export class MonolithService {
             'Content-Type': 'application/json',
             ...headers,
           },
+          timeout: 10000,
         }),
       );
 
       return response.data;
     } catch (error) {
-      throw error;
+      console.error(`Error calling ${method} ${url}:`, error.message);
+      if (error.response) {
+        throw new Error(`Monolith service error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+      } else if (error.code === 'ECONNREFUSED') {
+        throw new Error(`Cannot connect to Monolith service at ${this.monolithServiceUrl}. Make sure it's running.`);
+      } else {
+        throw new Error(`Monolith service error: ${error.message}`);
+      }
     }
   }
 
   // Purchases
   async createPurchase(data: any) {
-    return this.proxyRequest('POST', '/api/purchases', data);
+    return this.proxyRequest('POST', `/api/users/${data.userId}/purchases`, data);
+  }
+
+  async createPurchaseForUser(userId: string, data: any) {
+    // Não incluir userId no body, apenas na URL
+    return this.proxyRequest('POST', `/api/users/${userId}/purchases`, data);
   }
 
   async getPurchase(id: string) {
@@ -41,6 +54,10 @@ export class MonolithService {
 
   async listPurchases(skip?: number, take?: number) {
     return this.proxyRequest('GET', `/api/purchases?skip=${skip || 0}&take=${take || 20}`);
+  }
+
+  async listUserPurchases(userId: string, skip?: number, take?: number) {
+    return this.proxyRequest('GET', `/api/users/${userId}/purchases?skip=${skip || 0}&take=${take || 20}`);
   }
 
   async updatePurchase(id: string, data: any) {
