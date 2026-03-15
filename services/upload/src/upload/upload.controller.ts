@@ -18,7 +18,7 @@ export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, fieldSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Upload a file (multipart or base64)' })
   async uploadFile(
     @UploadedFile() file: any,

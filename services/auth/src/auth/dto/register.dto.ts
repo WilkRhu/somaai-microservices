@@ -48,5 +48,14 @@ export class RegisterDto {
   @IsOptional()
   @IsBoolean()
   business?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'business',
+    description: 'User type: "user" or "business"',
+    default: 'user',
+  })
+  @IsOptional()
+  @IsString()
+  userType?: string;
 }
 

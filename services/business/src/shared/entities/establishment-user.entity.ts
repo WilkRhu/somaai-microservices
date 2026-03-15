@@ -1,6 +1,5 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Establishment } from '../../establishments/entities/establishment.entity';
-import { User } from './user.entity';
 
 @Entity('establishment_users')
 export class EstablishmentUser {
@@ -14,7 +13,7 @@ export class EstablishmentUser {
   userId: string;
 
   @Column({ type: 'varchar', length: 50 })
-  role: string; // business_owner, business_admin, business_sales, business_stock, business_marketing
+  role: string;
 
   @Column({ type: 'varchar', length: 36, nullable: true })
   invitedBy: string;
@@ -26,7 +25,7 @@ export class EstablishmentUser {
   acceptedAt: Date;
 
   @Column({ type: 'varchar', length: 50, default: 'ACTIVE' })
-  status: string; // ACTIVE, INACTIVE, PENDING
+  status: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -37,8 +36,4 @@ export class EstablishmentUser {
   @ManyToOne(() => Establishment)
   @JoinColumn({ name: 'establishmentId' })
   establishment: Establishment;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
-  user: User;
 }

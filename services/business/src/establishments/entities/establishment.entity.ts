@@ -52,7 +52,7 @@ export class Establishment {
   @Column({ type: 'text', nullable: true })
   businessHours: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: 'text', nullable: true })
   logo: string;
 
   @Column({ type: 'text', nullable: true })

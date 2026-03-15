@@ -12,7 +12,7 @@ export class AuthClient {
     
     this.httpClient = axios.create({
       baseURL: authServiceUrl,
-      timeout: 5000,
+      timeout: 15000, // Increased from 5s to 15s to allow monolith sync
     });
   }
 
@@ -47,16 +47,18 @@ export class AuthClient {
     }
   }
 
-  async register(email: string, password: string, firstName: string, lastName: string) {
+  async register(email: string, password: string, firstName: string, lastName: string, userType?: string) {
     try {
       this.logger.log(`📝 Attempting registration for: ${email}`);
       this.logger.log(`   - Name: ${firstName} ${lastName}`);
+      this.logger.log(`   - User Type: ${userType || 'user'}`);
       
       const response = await this.httpClient.post('/api/auth/register', {
         email,
         password,
         firstName,
         lastName,
+        userType: userType || 'user',
       });
       
       this.logger.log(`✅ Registration successful for: ${email}`);

@@ -31,7 +31,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, firstName, lastName, phone, business } = registerDto;
+    const { email, password, firstName, lastName, phone, business, userType } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.usersRepository.findOne({
@@ -48,8 +48,9 @@ export class AuthService {
       parseInt(process.env.BCRYPT_ROUNDS || '10'),
     );
 
-    // Determine role based on business flag
-    const role = business ? 'business_owner' : 'user';
+    // Determine role based on business flag or userType
+    const isBusiness = business || userType === 'business';
+    const role = isBusiness ? 'business_owner' : 'user';
 
     // Create user
     const user = this.usersRepository.create({
@@ -64,12 +65,19 @@ export class AuthService {
 
     const savedUser = await this.usersRepository.save(user);
 
-    // Sincronizar com monolith se não houver referência a business
+    // Sincronizar com o serviço apropriado baseado no userType
     try {
-      await this.monolithSyncService.syncUserToMonolith(savedUser);
-      this.logger.log(`Synced user ${savedUser.id} to monolith`);
+      if (isBusiness) {
+        // Sincronizar com serviço de business
+        await this.monolithSyncService.syncUserToBusiness(savedUser);
+        this.logger.log(`Synced business user ${savedUser.id} to business service`);
+      } else {
+        // Sincronizar com monolith para usuários normais
+        await this.monolithSyncService.syncUserToMonolith(savedUser);
+        this.logger.log(`Synced user ${savedUser.id} to monolith`);
+      }
     } catch (error) {
-      this.logger.error(`Failed to sync user to monolith: ${error.message}`);
+      this.logger.error(`Failed to sync user: ${error.message}`);
       // Não falhar o registro se a sincronização falhar
     }
 

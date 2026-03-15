@@ -37,6 +37,7 @@ export class AuthController {
     @Body() registerDto: any,
   ) {
     this.logger.log(`📝 [REGISTER] Attempting registration for: ${registerDto.email}`);
+    this.logger.log(`   - User Type: ${registerDto.userType || 'user'}`);
     
     // Handle both formats: firstName/lastName or name
     let firstName = registerDto.firstName;
@@ -63,6 +64,7 @@ export class AuthController {
         registerDto.password,
         firstName,
         lastName,
+        registerDto.userType,
       );
       this.logger.log(`✅ [REGISTER] Registration successful for: ${registerDto.email}`);
       return result;

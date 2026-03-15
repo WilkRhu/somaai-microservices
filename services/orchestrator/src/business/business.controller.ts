@@ -64,6 +64,68 @@ export class BusinessController {
     return this.businessService.deleteEstablishment(id, req.headers.authorization);
   }
 
+  // MercadoPago
+  @Post('establishments/mercadopago/connect')
+  @ApiOperation({ summary: 'Connect establishment to MercadoPago' })
+  async mercadopagoConnect(@Body() data: any, @Request() req: any) {
+    return this.businessService.mercadopagoConnect(data, req.headers.authorization);
+  }
+
+  @Get('establishments/mercadopago/integration')
+  @ApiOperation({ summary: 'Get MercadoPago integration' })
+  async mercadopagoGetIntegration(@Request() req: any) {
+    return this.businessService.mercadopagoGetIntegration(req.headers.authorization);
+  }
+
+  @Delete('establishments/mercadopago/disconnect')
+  @ApiOperation({ summary: 'Disconnect MercadoPago' })
+  async mercadopagoDisconnect(@Request() req: any) {
+    return this.businessService.mercadopagoDisconnect(req.headers.authorization);
+  }
+
+  @Post('establishments/mercadopago/payment-preference')
+  @ApiOperation({ summary: 'Create MercadoPago payment preference' })
+  async mercadopagoCreatePreference(@Body() data: any, @Request() req: any) {
+    return this.businessService.mercadopagoCreatePreference(data, req.headers.authorization);
+  }
+
+  @Get('establishments/mercadopago/payment/:paymentId')
+  @ApiOperation({ summary: 'Get MercadoPago payment details' })
+  async mercadopagoGetPayment(@Param('paymentId') paymentId: string, @Request() req: any) {
+    return this.businessService.mercadopagoGetPayment(paymentId, req.headers.authorization);
+  }
+
+  // Loyalty Settings
+  @Get('establishments/:id/loyalty-settings')
+  @ApiOperation({ summary: 'Get loyalty settings' })
+  async getEstablishmentLoyaltySettings(@Param('id') id: string, @Request() req: any) {
+    return this.businessService.getEstablishmentLoyaltySettings(id, req.headers.authorization);
+  }
+
+  @Patch('establishments/:id/loyalty-settings')
+  @ApiOperation({ summary: 'Update loyalty settings (OWNER only)' })
+  async updateEstablishmentLoyaltySettings(@Param('id') id: string, @Body() data: any, @Request() req: any) {
+    return this.businessService.updateEstablishmentLoyaltySettings(id, data, req.headers.authorization);
+  }
+
+  @Get('establishments/:id/customers/:customerId/loyalty')
+  @ApiOperation({ summary: 'Get customer loyalty points' })
+  async getCustomerLoyalty(@Param('id') id: string, @Param('customerId') customerId: string, @Request() req: any) {
+    return this.businessService.getCustomerLoyalty(id, customerId, req.headers.authorization);
+  }
+
+  @Post('establishments/:id/customers/:customerId/loyalty/add')
+  @ApiOperation({ summary: 'Add loyalty points to customer' })
+  async addCustomerLoyaltyPoints(@Param('id') id: string, @Param('customerId') customerId: string, @Body() data: any, @Request() req: any) {
+    return this.businessService.addCustomerLoyaltyPoints(id, customerId, data, req.headers.authorization);
+  }
+
+  @Post('establishments/:id/customers/:customerId/loyalty/redeem')
+  @ApiOperation({ summary: 'Redeem loyalty points from customer' })
+  async redeemCustomerLoyaltyPoints(@Param('id') id: string, @Param('customerId') customerId: string, @Body() data: any, @Request() req: any) {
+    return this.businessService.redeemCustomerLoyaltyPoints(id, customerId, data, req.headers.authorization);
+  }
+
   // Customers
   @Post('customers')
   @ApiOperation({ summary: 'Create customer' })

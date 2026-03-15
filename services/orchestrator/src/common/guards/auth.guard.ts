@@ -2,7 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } 
 
 /**
  * Guard simples que apenas valida se o token existe
- * Não valida com auth service (deixa para o serviço chamado fazer isso)
+ * A validação real do JWT é feita pelo serviço de destino
  */
 @Injectable()
 export class AuthGuard implements CanActivate {

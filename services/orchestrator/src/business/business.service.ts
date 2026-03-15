@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class BusinessService {
+  private readonly logger = new Logger(BusinessService.name);
   private businessServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
 
   constructor(private httpService: HttpService) {}
@@ -12,26 +13,27 @@ export class BusinessService {
     const url = `${this.businessServiceUrl}${path}`;
 
     try {
-      const headers: any = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (authHeader) headers['Authorization'] = authHeader;
 
       const response = await firstValueFrom(
-        this.httpService.request({
-          method: method.toLowerCase(),
-          url,
-          data,
-          headers,
-        }),
+        this.httpService.request({ method: method.toLowerCase(), url, data, headers }),
       );
 
       return response.data;
     } catch (error) {
-      throw error;
+      this.logger.error(`Business proxy failed: ${method} ${url} - ${error.message}`);
+
+      if (error.response) {
+        throw new HttpException(
+          error.response.data || error.message,
+          error.response.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      } else if (error.request) {
+        throw new HttpException('Business service not responding', HttpStatus.SERVICE_UNAVAILABLE);
+      } else {
+        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }
   }
 
@@ -104,8 +106,7 @@ export class BusinessService {
   }
 
   async listSales(skip?: number, take?: number, authHeader?: string) {
-    // Precisa de userId, será passado no data
-    return this.proxyRequest('GET', `/api/users/purchases?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
+    return this.proxyRequest('GET', `/api/purchases?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
   async getSale(id: string, authHeader?: string) {
@@ -160,6 +161,48 @@ export class BusinessService {
 
   async deleteSupplier(id: string, authHeader?: string) {
     return this.proxyRequest('DELETE', `/api/suppliers/${id}`, undefined, authHeader);
+  }
+
+  // MercadoPago
+  async mercadopagoConnect(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/establishments/mercadopago/connect', data, authHeader);
+  }
+
+  async mercadopagoGetIntegration(authHeader?: string) {
+    return this.proxyRequest('GET', '/api/establishments/mercadopago/integration', undefined, authHeader);
+  }
+
+  async mercadopagoDisconnect(authHeader?: string) {
+    return this.proxyRequest('DELETE', '/api/establishments/mercadopago/disconnect', undefined, authHeader);
+  }
+
+  async mercadopagoCreatePreference(data: any, authHeader?: string) {
+    return this.proxyRequest('POST', '/api/establishments/mercadopago/payment-preference', data, authHeader);
+  }
+
+  async mercadopagoGetPayment(paymentId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/mercadopago/payment/${paymentId}`, undefined, authHeader);
+  }
+
+  // Loyalty Settings
+  async getEstablishmentLoyaltySettings(id: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${id}/loyalty-settings`, undefined, authHeader);
+  }
+
+  async updateEstablishmentLoyaltySettings(id: string, data: any, authHeader?: string) {
+    return this.proxyRequest('PATCH', `/api/establishments/${id}/loyalty-settings`, data, authHeader);
+  }
+
+  async getCustomerLoyalty(establishmentId: string, customerId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/customers/${customerId}/loyalty`, undefined, authHeader);
+  }
+
+  async addCustomerLoyaltyPoints(establishmentId: string, customerId: string, data: any, authHeader?: string) {
+    return this.proxyRequest('POST', `/api/establishments/${establishmentId}/customers/${customerId}/loyalty/add`, data, authHeader);
+  }
+
+  async redeemCustomerLoyaltyPoints(establishmentId: string, customerId: string, data: any, authHeader?: string) {
+    return this.proxyRequest('POST', `/api/establishments/${establishmentId}/customers/${customerId}/loyalty/redeem`, data, authHeader);
   }
 
   // Offers

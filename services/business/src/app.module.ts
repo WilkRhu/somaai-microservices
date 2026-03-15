@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
+import * as express from 'express';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EstablishmentsModule } from './establishments/establishments.module';
@@ -11,7 +12,9 @@ import { SalesModule } from './sales/sales.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { OffersModule } from './offers/offers.module';
+import { UsersModule } from './users/users.module';
 import { KafkaModule } from './shared/kafka/kafka.module';
+import { MercadopagoModule } from './mercadopago/mercadopago.module';
 
 @Module({
   imports: [
@@ -32,6 +35,7 @@ import { KafkaModule } from './shared/kafka/kafka.module';
     }),
     HttpModule,
     KafkaModule,
+    UsersModule,
     EstablishmentsModule,
     CustomersModule,
     InventoryModule,
@@ -39,8 +43,15 @@ import { KafkaModule } from './shared/kafka/kafka.module';
     ExpensesModule,
     SuppliersModule,
     OffersModule,
+    MercadopagoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(express.json({ limit: '50mb' }))
+      .forRoutes('*');
+  }
+}
