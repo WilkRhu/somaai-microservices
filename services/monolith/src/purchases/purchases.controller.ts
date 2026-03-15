@@ -25,6 +25,31 @@ import { ValidateUserId } from '../common/decorators/validate-user-id.decorator'
 export class PurchasesController {
   constructor(private purchasesService: PurchasesService) {}
 
+  @Post('from-receipt')
+  @ApiOperation({ summary: 'Create purchase from receipt image (OCR + Purchase)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Purchase created from receipt',
+    type: PurchaseResponseDto,
+  })
+  async createPurchaseFromReceipt(
+    @Param('userId') @ValidateUserId() userId: string,
+    @Body() body: any,
+  ): Promise<PurchaseResponseDto> {
+    return this.purchasesService.createPurchaseFromReceipt(userId, body);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get purchase summary' })
+  @ApiResponse({
+    status: 200,
+    description: 'Purchase summary',
+    type: PurchaseSummaryDto,
+  })
+  async getPurchaseSummary(@Param('userId') @ValidateUserId() userId: string): Promise<PurchaseSummaryDto> {
+    return this.purchasesService.getPurchaseSummary(userId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create new purchase' })
   @ApiResponse({
@@ -33,7 +58,7 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async createPurchase(
-    @ValidateUserId('userId') userId: string,
+    @Param('userId') @ValidateUserId() userId: string,
     @Body() createPurchaseDto: CreatePurchaseDto,
   ): Promise<PurchaseResponseDto> {
     return this.purchasesService.createPurchase({
@@ -49,22 +74,11 @@ export class PurchasesController {
     description: 'Purchases list',
   })
   async listPurchases(
-    @ValidateUserId('userId') userId: string,
+    @Param('userId') @ValidateUserId() userId: string,
     @Query('skip') skip: number = 0,
     @Query('take') take: number = 20,
   ): Promise<any> {
     return this.purchasesService.listPurchases(userId, skip, take);
-  }
-
-  @Get('summary')
-  @ApiOperation({ summary: 'Get purchase summary' })
-  @ApiResponse({
-    status: 200,
-    description: 'Purchase summary',
-    type: PurchaseSummaryDto,
-  })
-  async getPurchaseSummary(@ValidateUserId('userId') userId: string): Promise<PurchaseSummaryDto> {
-    return this.purchasesService.getPurchaseSummary(userId);
   }
 
   @Get(':purchaseId')
@@ -75,7 +89,7 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async getPurchaseById(
-    @ValidateUserId('userId') userId: string,
+    @Param('userId') @ValidateUserId() userId: string,
     @Param('purchaseId') purchaseId: string,
   ): Promise<PurchaseResponseDto> {
     return this.purchasesService.getPurchaseById(userId, purchaseId);
@@ -89,7 +103,7 @@ export class PurchasesController {
     type: PurchaseResponseDto,
   })
   async updatePurchase(
-    @ValidateUserId('userId') userId: string,
+    @Param('userId') @ValidateUserId() userId: string,
     @Param('purchaseId') purchaseId: string,
     @Body() updateData: any,
   ): Promise<PurchaseResponseDto> {
@@ -100,7 +114,7 @@ export class PurchasesController {
   @ApiOperation({ summary: 'Delete purchase' })
   @ApiResponse({ status: 200, description: 'Purchase deleted' })
   async deletePurchase(
-    @ValidateUserId('userId') userId: string,
+    @Param('userId') @ValidateUserId() userId: string,
     @Param('purchaseId') purchaseId: string,
   ): Promise<{ success: boolean }> {
     await this.purchasesService.deletePurchase(userId, purchaseId);

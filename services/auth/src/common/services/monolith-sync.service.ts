@@ -23,11 +23,14 @@ export class MonolithSyncService {
       emailVerified: user.emailVerified,
     };
 
-    this.logger.log(`Syncing user ${user.id} to monolith at ${this.monolithUrl}`);
+    this.logger.log(`🔄 Syncing user ${user.id} to monolith at ${this.monolithUrl}`);
+    this.logger.log(`   - Payload:`, JSON.stringify(payload));
 
     // Try up to 3 times
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
+        this.logger.log(`   - Attempt ${attempt}/3...`);
+        
         const response = await firstValueFrom(
           this.httpService
             .post(`${this.monolithUrl}/api/users/internal/sync-from-auth`, payload, {
@@ -39,14 +42,16 @@ export class MonolithSyncService {
             .pipe(timeout(5000)),
         );
 
-        this.logger.log(`Successfully synced user ${user.id} to monolith`);
+        this.logger.log(`✅ Successfully synced user ${user.id} to monolith`);
+        this.logger.log(`   - Response:`, JSON.stringify(response.data));
         return;
       } catch (error: any) {
         const status = error.response?.status ?? error.code ?? 'unknown';
         const data = JSON.stringify(error.response?.data ?? error.message);
         this.logger.error(
-          `Sync attempt ${attempt}/3 failed for user ${user.id}: status=${status}, data=${data}`,
+          `❌ Sync attempt ${attempt}/3 failed for user ${user.id}: status=${status}, data=${data}`,
         );
+        this.logger.error(`   - Error:`, error.message);
 
         if (attempt < 3) {
           await new Promise((r) => setTimeout(r, 500 * attempt));
@@ -55,7 +60,7 @@ export class MonolithSyncService {
     }
 
     this.logger.error(
-      `All sync attempts failed for user ${user.id}. User exists in auth but NOT in monolith.`,
+      `❌ All sync attempts failed for user ${user.id}. User exists in auth but NOT in monolith.`,
     );
   }
 

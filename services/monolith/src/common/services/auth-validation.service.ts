@@ -22,6 +22,7 @@ export class AuthValidationService {
   async validateToken(token: string): Promise<ValidatedUser> {
     try {
       this.logger.debug(`Validating token locally`);
+      this.logger.debug(`Token: ${token.substring(0, 50)}...`);
 
       const decoded = this.jwtService.verify(token);
 
@@ -36,6 +37,8 @@ export class AuthValidationService {
       };
     } catch (error) {
       this.logger.error(`Token validation failed: ${error.message}`);
+      this.logger.error(`Error name: ${error.name}`);
+      this.logger.error(`Error details:`, error);
       throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
     }
   }

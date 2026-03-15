@@ -1,23 +1,56 @@
 const mysql = require('mysql2/promise');
 
-async function initBusinessDatabase() {
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USERNAME || 'somaai',
-    password: process.env.DB_PASSWORD || 'somaai_password',
-  });
+async function setupBusinessDatabase() {
+  let connection;
+  
+  try {
+    // Conecta com root usando a senha do docker-compose
+    connection = await mysql.createConnection({
+      host: 'localhost',
+      port: 3306,
+      user: 'root',
+      password: 'root_password',
+      multipleStatements: true,
+    });
+
+    console.log('✓ Connected to MySQL as root');
+  } catch (error) {
+    console.error('Error connecting to MySQL:', error.message);
+    console.error('\nMake sure MySQL is running and accessible at localhost:3306');
+    console.error('If using Docker, ensure the container is running: docker-compose up -d mysql-master');
+    process.exit(1);
+  }
 
   try {
-    console.log('Creating somaai_business database...');
-    await connection.execute('CREATE DATABASE IF NOT EXISTS somaai_business');
+    console.log('\nCreating somaai_business database...');
+    await connection.query('CREATE DATABASE IF NOT EXISTS somaai_business');
     console.log('✓ Database created');
 
-    console.log('Creating business service tables...');
-    await connection.execute('USE somaai_business');
+    console.log('\nGranting permissions to somaai user...');
+    await connection.query('GRANT ALL PRIVILEGES ON somaai_business.* TO "somaai"@"%"');
+    await connection.query('FLUSH PRIVILEGES');
+    console.log('✓ Permissions granted');
 
-    // Establishments table
-    await connection.execute(`
+    console.log('\nCreating business service tables...');
+    
+    const sql = `
+      USE somaai_business;
+
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(36) PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        firstName VARCHAR(255) NOT NULL,
+        lastName VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'user',
+        phone VARCHAR(20),
+        avatar VARCHAR(255),
+        isActive BOOLEAN DEFAULT true,
+        emailVerified BOOLEAN DEFAULT false,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        lastLogin TIMESTAMP NULL
+      );
+
       CREATE TABLE IF NOT EXISTS establishments (
         id VARCHAR(36) PRIMARY KEY,
         ownerId VARCHAR(36) NOT NULL,
@@ -31,13 +64,27 @@ async function initBusinessDatabase() {
         zipCode VARCHAR(10),
         isActive BOOLEAN DEFAULT true,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✓ Establishments table created');
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (ownerId) REFERENCES users(id)
+      );
 
-    // Customers table
-    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS establishment_users (
+        id VARCHAR(36) PRIMARY KEY,
+        establishmentId VARCHAR(36) NOT NULL,
+        userId VARCHAR(36) NOT NULL,
+        role VARCHAR(50) NOT NULL,
+        invitedBy VARCHAR(36),
+        invitedAt TIMESTAMP,
+        acceptedAt TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'ACTIVE',
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (establishmentId) REFERENCES establishments(id),
+        FOREIGN KEY (userId) REFERENCES users(id),
+        FOREIGN KEY (invitedBy) REFERENCES users(id),
+        UNIQUE KEY unique_establishment_user (establishmentId, userId)
+      );
+
       CREATE TABLE IF NOT EXISTS customers (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -53,12 +100,8 @@ async function initBusinessDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id)
-      )
-    `);
-    console.log('✓ Customers table created');
+      );
 
-    // Inventory table
-    await connection.execute(`
       CREATE TABLE IF NOT EXISTS inventory (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -70,12 +113,8 @@ async function initBusinessDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id)
-      )
-    `);
-    console.log('✓ Inventory table created');
+      );
 
-    // Sales table
-    await connection.execute(`
       CREATE TABLE IF NOT EXISTS sales (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -86,12 +125,8 @@ async function initBusinessDatabase() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id),
         FOREIGN KEY (customerId) REFERENCES customers(id)
-      )
-    `);
-    console.log('✓ Sales table created');
+      );
 
-    // Expenses table
-    await connection.execute(`
       CREATE TABLE IF NOT EXISTS expenses (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -102,12 +137,8 @@ async function initBusinessDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id)
-      )
-    `);
-    console.log('✓ Expenses table created');
+      );
 
-    // Suppliers table
-    await connection.execute(`
       CREATE TABLE IF NOT EXISTS suppliers (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -123,12 +154,8 @@ async function initBusinessDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id)
-      )
-    `);
-    console.log('✓ Suppliers table created');
+      );
 
-    // Offers table
-    await connection.execute(`
       CREATE TABLE IF NOT EXISTS offers (
         id VARCHAR(36) PRIMARY KEY,
         establishmentId VARCHAR(36) NOT NULL,
@@ -142,9 +169,11 @@ async function initBusinessDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (establishmentId) REFERENCES establishments(id)
-      )
-    `);
-    console.log('✓ Offers table created');
+      );
+    `;
+
+    await connection.query(sql);
+    console.log('✓ All tables created successfully');
 
     console.log('\n✓ Business database initialized successfully!');
     process.exit(0);
@@ -156,4 +185,4 @@ async function initBusinessDatabase() {
   }
 }
 
-initBusinessDatabase();
+setupBusinessDatabase();

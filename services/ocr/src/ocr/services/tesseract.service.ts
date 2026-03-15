@@ -58,11 +58,20 @@ export class TesseractService {
 
   private parseNfce(text: string): Record<string, any> {
     // Simple parsing logic for NFC-e
-    const lines = text.split('\n');
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
     const data: Record<string, any> = {
       items: [],
       total: 0,
+      productName: '',
     };
+
+    let totalFound = false;
+    const prices: number[] = [];
+
+    // Extract product name from first non-empty line
+    if (lines.length > 0) {
+      data.productName = lines[0].trim();
+    }
 
     for (const line of lines) {
       // Extract CNPJ
@@ -71,10 +80,25 @@ export class TesseractService {
         if (cnpj) data.cnpj = cnpj[0];
       }
 
+      // Extract all prices
+      const priceMatches = line.match(/R\$\s*([\d.,]+)/g);
+      if (priceMatches) {
+        for (const match of priceMatches) {
+          const priceStr = match.replace('R$', '').trim();
+          const price = parseFloat(priceStr.replace('.', '').replace(',', '.'));
+          if (!isNaN(price)) {
+            prices.push(price);
+          }
+        }
+      }
+
       // Extract total
-      if (line.includes('Total') || line.includes('TOTAL')) {
+      if (line.toUpperCase().includes('TOTAL')) {
         const total = line.match(/R\$\s*([\d.,]+)/);
-        if (total) data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+        if (total) {
+          data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+          totalFound = true;
+        }
       }
 
       // Extract date
@@ -82,6 +106,18 @@ export class TesseractService {
         const date = line.match(/\d{2}\/\d{2}\/\d{4}/);
         if (date) data.date = date[0];
       }
+    }
+
+    // If no total found, use the last price
+    if (!totalFound && prices.length > 0) {
+      data.total = prices[prices.length - 1];
+    }
+
+    if (prices.length > 0) {
+      data.items = prices.map((price, index) => ({
+        name: `Item ${index + 1}`,
+        price: price,
+      }));
     }
 
     return data;
@@ -89,17 +125,42 @@ export class TesseractService {
 
   private parseReceipt(text: string): Record<string, any> {
     // Simple parsing logic for receipts
-    const lines = text.split('\n');
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
     const data: Record<string, any> = {
       items: [],
       total: 0,
+      productName: '',
     };
 
+    let totalFound = false;
+    const prices: number[] = [];
+
+    // Extract product name from first non-empty line
+    if (lines.length > 0) {
+      data.productName = lines[0].trim();
+      this.logger.log(`📝 Product Name extracted: ${data.productName}`);
+    }
+
     for (const line of lines) {
-      // Extract total
-      if (line.includes('Total') || line.includes('TOTAL')) {
+      // Extract all prices in format R$X,XX or R$ X,XX
+      const priceMatches = line.match(/R\$\s*([\d.,]+)/g);
+      if (priceMatches) {
+        for (const match of priceMatches) {
+          const priceStr = match.replace('R$', '').trim();
+          const price = parseFloat(priceStr.replace('.', '').replace(',', '.'));
+          if (!isNaN(price)) {
+            prices.push(price);
+          }
+        }
+      }
+
+      // Extract total (look for "Total" keyword)
+      if (line.toUpperCase().includes('TOTAL')) {
         const total = line.match(/R\$\s*([\d.,]+)/);
-        if (total) data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+        if (total) {
+          data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+          totalFound = true;
+        }
       }
 
       // Extract date
@@ -109,16 +170,45 @@ export class TesseractService {
       }
     }
 
+    // If no total found with "Total" keyword, use the last price as total
+    if (!totalFound && prices.length > 0) {
+      data.total = prices[prices.length - 1];
+      this.logger.log(`📝 No "Total" keyword found. Using last price as total: ${data.total}`);
+    }
+
+    // Extract items from prices
+    if (prices.length > 0) {
+      data.items = prices.map((price, index) => ({
+        name: `Item ${index + 1}`,
+        price: price,
+      }));
+    }
+
+    this.logger.log(`🔍 RECEIPT PARSING RESULT:`);
+    this.logger.log(`   - Product Name: ${data.productName}`);
+    this.logger.log(`   - Total: ${data.total}`);
+    this.logger.log(`   - Prices found: ${prices.length}`);
+    this.logger.log(`   - Items: ${JSON.stringify(data.items)}`);
+
     return data;
   }
 
   private parseInvoice(text: string): Record<string, any> {
     // Simple parsing logic for invoices
-    const lines = text.split('\n');
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
     const data: Record<string, any> = {
       items: [],
       total: 0,
+      productName: '',
     };
+
+    let totalFound = false;
+    const prices: number[] = [];
+
+    // Extract product name from first non-empty line
+    if (lines.length > 0) {
+      data.productName = lines[0].trim();
+    }
 
     for (const line of lines) {
       // Extract invoice number
@@ -127,11 +217,44 @@ export class TesseractService {
         if (number) data.invoiceNumber = number[0];
       }
 
-      // Extract total
-      if (line.includes('Total') || line.includes('TOTAL')) {
-        const total = line.match(/R\$\s*([\d.,]+)/);
-        if (total) data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+      // Extract all prices
+      const priceMatches = line.match(/R\$\s*([\d.,]+)/g);
+      if (priceMatches) {
+        for (const match of priceMatches) {
+          const priceStr = match.replace('R$', '').trim();
+          const price = parseFloat(priceStr.replace('.', '').replace(',', '.'));
+          if (!isNaN(price)) {
+            prices.push(price);
+          }
+        }
       }
+
+      // Extract total
+      if (line.toUpperCase().includes('TOTAL')) {
+        const total = line.match(/R\$\s*([\d.,]+)/);
+        if (total) {
+          data.total = parseFloat(total[1].replace('.', '').replace(',', '.'));
+          totalFound = true;
+        }
+      }
+
+      // Extract date
+      if (line.match(/\d{2}\/\d{2}\/\d{4}/)) {
+        const date = line.match(/\d{2}\/\d{2}\/\d{4}/);
+        if (date) data.date = date[0];
+      }
+    }
+
+    // If no total found, use the last price
+    if (!totalFound && prices.length > 0) {
+      data.total = prices[prices.length - 1];
+    }
+
+    if (prices.length > 0) {
+      data.items = prices.map((price, index) => ({
+        name: `Item ${index + 1}`,
+        price: price,
+      }));
     }
 
     return data;

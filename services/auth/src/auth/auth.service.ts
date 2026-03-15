@@ -31,7 +31,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, firstName, lastName, phone } = registerDto;
+    const { email, password, firstName, lastName, phone, business } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.usersRepository.findOne({
@@ -48,6 +48,9 @@ export class AuthService {
       parseInt(process.env.BCRYPT_ROUNDS || '10'),
     );
 
+    // Determine role based on business flag
+    const role = business ? 'business_owner' : 'user';
+
     // Create user
     const user = this.usersRepository.create({
       email,
@@ -56,7 +59,7 @@ export class AuthService {
       lastName,
       phone,
       authProvider: 'EMAIL',
-      role: 'USER',
+      role,
     });
 
     const savedUser = await this.usersRepository.save(user);
@@ -91,6 +94,7 @@ export class AuthService {
         email: savedUser.email,
         firstName: savedUser.firstName,
         lastName: savedUser.lastName,
+        role: savedUser.role,
         isActive: savedUser.isActive,
       },
     };
@@ -153,6 +157,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         isActive: user.isActive,
       },
     };
@@ -231,6 +236,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
         isActive: user.isActive,
       },
     };
@@ -278,6 +284,7 @@ export class AuthService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          role: user.role,
           isActive: user.isActive,
         },
       };

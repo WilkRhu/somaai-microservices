@@ -34,6 +34,8 @@ import { Roles } from '../common/decorators/roles.decorator';
 @UseGuards(AuthGuard)
 @Controller('api/users')
 export class UsersController {
+  private readonly logger = new (require('@nestjs/common').Logger)(UsersController.name);
+
   constructor(
     private usersService: UsersService,
     private userSyncService: UserSyncService,
@@ -286,6 +288,8 @@ export class AdminUsersController {
 @ApiTags('Internal')
 @Controller('api/users/internal')
 export class UsersInternalController {
+  private readonly logger = new (require('@nestjs/common').Logger)(UsersInternalController.name);
+
   constructor(private userSyncService: UserSyncService) {}
 
   /**
@@ -304,15 +308,27 @@ export class UsersInternalController {
     @Body() syncDto: SyncFromAuthDto,
     @Headers('x-internal-service') internalService: string,
   ): Promise<User> {
+    this.logger.log(`📥 Received sync request for user: ${syncDto.id}`);
+    this.logger.log(`   - Header: ${internalService}`);
+    this.logger.log(`   - Payload:`, JSON.stringify(syncDto));
+
     // Validar header de serviço interno
     if (internalService !== 'auth-service') {
+      this.logger.error(`❌ Invalid internal service header: ${internalService}`);
       throw new HttpException(
         'Unauthorized - Invalid internal service',
         HttpStatus.UNAUTHORIZED,
       );
     }
 
-    return this.userSyncService.syncUserFromAuth(syncDto);
+    try {
+      const result = await this.userSyncService.syncUserFromAuth(syncDto);
+      this.logger.log(`✅ User ${syncDto.id} synced successfully`);
+      return result;
+    } catch (error) {
+      this.logger.error(`❌ Error syncing user: ${error.message}`);
+      throw error;
+    }
   }
 
   /**

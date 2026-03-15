@@ -115,4 +115,9 @@ export class MonolithService {
   async deletePurchaseById(purchaseId: string, authHeader?: string) {
     return this.proxyRequest('DELETE', `/api/purchases/${purchaseId}`, undefined, authHeader);
   }
+
+  // User Stats
+  async getUserStats(authHeader?: string) {
+    return this.proxyRequest('GET', '/api/users/admin/stats', undefined, authHeader);
+  }
 }

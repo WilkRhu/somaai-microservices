@@ -174,4 +174,15 @@ export class MonolithController {
     }
     return this.monolithService.deletePurchaseById(purchaseId, authHeader);
   }
+
+  // User Stats
+  @Get('users/admin/stats')
+  @ApiOperation({ summary: 'Get user statistics' })
+  async getUserStats(@Request() req: any) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      this.logger.warn('Missing authorization header in getUserStats');
+    }
+    return this.monolithService.getUserStats(authHeader);
+  }
 }

@@ -20,6 +20,7 @@ export class AuthResponseDto {
       email: { type: 'string', example: 'user@example.com' },
       firstName: { type: 'string', example: 'John' },
       lastName: { type: 'string', example: 'Doe' },
+      role: { type: 'string', example: 'USER' },
       isActive: { type: 'boolean', example: true },
     },
   })
@@ -28,6 +29,7 @@ export class AuthResponseDto {
     email: string;
     firstName: string;
     lastName: string;
+    role: string;
     isActive: boolean;
   };
 }

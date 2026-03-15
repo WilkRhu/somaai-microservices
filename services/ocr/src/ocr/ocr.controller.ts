@@ -38,7 +38,19 @@ export class OcrController {
         imageBase64: imageData,
       };
 
-      return await this.ocrService.extractBase64(normalizedBody);
+      const result = await this.ocrService.extractBase64(normalizedBody);
+      
+      this.logger.log(`✅ OCR EXTRACTION RESULT:`);
+      this.logger.log(`   - Text length: ${result.extractedData?.descriptions?.[0]?.cleanText?.length || 0} characters`);
+      this.logger.log(`   - Confidence: ${result.confidence}`);
+      this.logger.log(`   - Document Type: ${result.documentType}`);
+      this.logger.log(`   - Price: ${result.extractedData?.mainValue?.value}`);
+      this.logger.log(`   - Full Result:`, JSON.stringify(result, null, 2));
+      
+      return {
+        success: true,
+        data: result,
+      };
     } catch (error) {
       this.logger.error(`Controller error:`, error);
       if (error instanceof HttpException) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { EstablishmentsService } from './establishments.service';
 
@@ -9,8 +9,12 @@ export class EstablishmentsController {
 
   @Post()
   @ApiOperation({ summary: 'Create establishment' })
-  async create(@Body() createEstablishmentDto: any) {
-    return this.establishmentsService.create(createEstablishmentDto);
+  async create(@Body() createEstablishmentDto: any, @Request() req: any) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    return this.establishmentsService.create(createEstablishmentDto, userId);
   }
 
   @Get()

@@ -6,9 +6,7 @@ import {
   UpdateDateColumn,
   Index,
   OneToMany,
-  BeforeInsert,
 } from 'typeorm';
-import { randomUUID } from 'crypto';
 import { UserAddress } from './user-address.entity';
 import { UserCard } from './user-card.entity';
 import { Purchase } from '../../purchases/entities/purchase.entity';
@@ -18,13 +16,6 @@ import { Purchase } from '../../purchases/entities/purchase.entity';
 export class User {
   @PrimaryColumn('uuid')
   id: string;
-
-  @BeforeInsert()
-  generateId() {
-    if (!this.id) {
-      this.id = randomUUID();
-    }
-  }
 
   @Column({ type: 'varchar', length: 14, nullable: true })
   cpf: string;
@@ -56,8 +47,8 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['USER', 'BUSINESS_OWNER', 'ADMIN'],
-    default: 'USER',
+    enum: ['user', 'support', 'admin', 'super_admin'],
+    default: 'user',
   })
   role: string;
 

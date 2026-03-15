@@ -1,4 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,10 +10,13 @@ import { OnboardingDto, OnboardingStatusDto } from './dto/onboarding.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { ImageUploadService } from './services/image-upload.service';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private httpService: HttpService,
     private imageUploadService: ImageUploadService,
   ) {}
@@ -207,22 +212,80 @@ export class UsersService {
   }
 
   async getUserStats(): Promise<UserStatsDto> {
+    const totalUsers = await this.userRepository.count();
+    const activeUsers = await this.userRepository.count({ where: { isActive: true } });
+    
+    // Users created this month
+    const thisMonth = new Date();
+    thisMonth.setDate(1);
+    thisMonth.setHours(0, 0, 0, 0);
+    
+    const newUsersThisMonth = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :startOfMonth', { startOfMonth: thisMonth })
+      .getCount();
+
+    // Users created this week
+    const thisWeek = new Date();
+    thisWeek.setDate(thisWeek.getDate() - thisWeek.getDay());
+    thisWeek.setHours(0, 0, 0, 0);
+    
+    const newUsersThisWeek = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :startOfWeek', { startOfWeek: thisWeek })
+      .getCount();
+
+    // Users by role - initialize with default values
+    const usersByRoleMap = {
+      user: 0,
+      admin: 0,
+      support: 0,
+      super_admin: 0,
+    };
+
+    const usersByRole = await this.userRepository
+      .createQueryBuilder('user')
+      .select('user.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('user.role')
+      .getRawMany();
+
+    usersByRole.forEach((row) => {
+      const roleKey = row.role.toLowerCase();
+      if (roleKey in usersByRoleMap) {
+        usersByRoleMap[roleKey] = parseInt(row.count, 10);
+      }
+    });
+
+    // Users by plan - initialize with default values
+    const usersByPlanMap = {
+      free: 0,
+      premium: 0,
+      enterprise: 0,
+    };
+
+    const usersByPlan = await this.userRepository
+      .createQueryBuilder('user')
+      .select('user.planType', 'planType')
+      .addSelect('COUNT(*)', 'count')
+      .where('user.planType IS NOT NULL')
+      .groupBy('user.planType')
+      .getRawMany();
+
+    usersByPlan.forEach((row) => {
+      const planKey = row.planType.toLowerCase();
+      if (planKey in usersByPlanMap) {
+        usersByPlanMap[planKey] = parseInt(row.count, 10);
+      }
+    });
+
     return {
-      totalUsers: 1000,
-      activeUsers: 750,
-      newUsersThisMonth: 150,
-      newUsersThisWeek: 35,
-      usersByRole: {
-        user: 950,
-        admin: 40,
-        support: 8,
-        super_admin: 2,
-      },
-      usersByPlan: {
-        free: 600,
-        premium: 350,
-        enterprise: 50,
-      },
+      totalUsers,
+      activeUsers,
+      newUsersThisMonth,
+      newUsersThisWeek,
+      usersByRole: usersByRoleMap,
+      usersByPlan: usersByPlanMap,
     };
   }
 

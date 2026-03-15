@@ -16,6 +16,7 @@ export class UserSyncService {
   /**
    * Sincroniza um usuário criado no auth com o monolith
    * Se o usuário não existir, cria um novo com o mesmo ID do auth
+   * Se existir com email placeholder, atualiza para o email real
    */
   async syncUserFromAuth(syncDto: SyncFromAuthDto): Promise<User> {
     try {
@@ -26,7 +27,15 @@ export class UserSyncService {
 
       if (user) {
         this.logger.log(`User ${syncDto.id} already exists in monolith, updating...`);
-        // Atualizar dados se necessário
+        
+        // Se o email atual é um placeholder, atualizar para o email real
+        const isPlaceholder = user.email.startsWith('placeholder-') && user.email.endsWith('@system.local');
+        
+        if (isPlaceholder && syncDto.email !== user.email) {
+          this.logger.log(`   - Updating placeholder email from ${user.email} to ${syncDto.email}`);
+        }
+        
+        // Atualizar dados
         user.email = syncDto.email;
         user.firstName = syncDto.firstName;
         user.lastName = syncDto.lastName;
@@ -35,6 +44,7 @@ export class UserSyncService {
         user.authProvider = syncDto.authProvider;
         user.role = syncDto.role;
         user.emailVerified = syncDto.emailVerified;
+        
         return await this.usersRepository.save(user);
       }
 
@@ -57,6 +67,7 @@ export class UserSyncService {
       return savedUser;
     } catch (error) {
       this.logger.error(`Error syncing user from auth: ${error.message}`);
+      this.logger.error(`Error details:`, error);
       throw error;
     }
   }

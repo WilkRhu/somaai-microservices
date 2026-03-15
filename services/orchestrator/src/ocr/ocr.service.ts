@@ -51,6 +51,16 @@ export class OcrService {
 
   // OCR
   async extractBase64(data: any) {
-    return this.proxyRequest('POST', '/api/ocr/extract-base64', data);
+    this.logger.log(`🔄 ORCHESTRATOR: Proxying OCR request to ${this.ocrServiceUrl}/api/ocr/extract-base64`);
+    this.logger.log(`   - Document Type: ${data.documentType}`);
+    this.logger.log(`   - Language: ${data.language}`);
+    
+    const result = await this.proxyRequest('POST', '/api/ocr/extract-base64', data);
+    
+    this.logger.log(`✅ ORCHESTRATOR: OCR Response received`);
+    this.logger.log(`   - Success: ${result.success}`);
+    this.logger.log(`   - Price: ${result.data?.extractedData?.mainValue?.value}`);
+    
+    return result;
   }
 }

@@ -11,6 +11,7 @@ import { SalesModule } from './sales/sales.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { OffersModule } from './offers/offers.module';
+import { KafkaModule } from './shared/kafka/kafka.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OffersModule } from './offers/offers.module';
       logging: process.env.DB_LOGGING === 'true',
     }),
     HttpModule,
+    KafkaModule,
     EstablishmentsModule,
     CustomersModule,
     InventoryModule,
