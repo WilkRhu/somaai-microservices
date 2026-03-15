@@ -3,11 +3,11 @@
 Write-Host "🔍 Verificando dados no monolith..." -ForegroundColor Green
 Write-Host ""
 
-# Configuração do banco de dados
-$dbHost = "localhost"
-$dbPort = 3306
-$dbUser = "somaai"
-$dbPassword = "somaai_password"
+# Configuração do banco de dados (lê do .env se disponível)
+$dbHost = if ($env:DB_HOST) { $env:DB_HOST } else { "localhost" }
+$dbPort = if ($env:DB_PORT) { $env:DB_PORT } else { 3306 }
+$dbUser = if ($env:DB_USERNAME) { $env:DB_USERNAME } else { "somaai" }
+$dbPassword = if ($env:DB_PASSWORD) { $env:DB_PASSWORD } else { Read-Host "DB Password" -AsSecureString | ConvertFrom-SecureString -AsPlainText }
 $dbName = "somaai_monolith"
 
 # Criar conexão

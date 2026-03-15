@@ -1,15 +1,15 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
 async function setupBusinessDatabase() {
   let connection;
   
   try {
-    // Conecta com root usando a senha do docker-compose
     connection = await mysql.createConnection({
-      host: 'localhost',
-      port: 3306,
-      user: 'root',
-      password: 'root_password',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306'),
+      user: process.env.DB_ROOT_USER || 'root',
+      password: process.env.DB_ROOT_PASSWORD,
       multipleStatements: true,
     });
 

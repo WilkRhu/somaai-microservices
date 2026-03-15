@@ -17,14 +17,13 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
       connectionTimeout: 10000,
       requestTimeout: 30000,
+      retry: {
+        initialRetryTime: 100,
+        retries: 8,
+      },
     });
 
-    this.producer = this.kafka.producer({
-      createPartitioner: () => {
-        const { Partitioners } = require('kafkajs');
-        return Partitioners.LegacyPartitioner;
-      }
-    });
+    this.producer = this.kafka.producer();
     
     this.consumer = this.kafka.consumer({
       groupId: process.env.KAFKA_GROUP_ID || 'orchestrator-group',
@@ -32,8 +31,22 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       heartbeatInterval: 3000,
     });
 
-    await this.producer.connect();
-    await this.consumer.connect();
+    try {
+      await this.producer.connect();
+      this.logger.log('Kafka producer connected successfully');
+    } catch (error) {
+      this.logger.error('Failed to connect Kafka producer:', error.message);
+      throw error;
+    }
+
+    try {
+      await this.consumer.connect();
+      this.logger.log('Kafka consumer connected successfully');
+    } catch (error) {
+      this.logger.error('Failed to connect Kafka consumer:', error.message);
+      throw error;
+    }
+
     this.logger.log('Kafka service initialized');
   }
 
@@ -44,18 +57,20 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async publishEvent(topic: string, message: any) {
     try {
-      await this.producer.send({
+      const result = await this.producer.send({
         topic,
         messages: [
           {
-            key: message.id || Date.now().toString(),
+            key: message.id || message.userId || Date.now().toString(),
             value: JSON.stringify(message),
           },
         ],
       });
-      this.logger.log(`Published event to topic ${topic}`);
+      this.logger.log(`Published event to topic ${topic}: ${JSON.stringify(result)}`);
+      return result;
     } catch (error) {
-      this.logger.error(`Error publishing event to topic ${topic}: ${error.message}`);
+      this.logger.error(`Error publishing event to topic ${topic}: ${error.message}`, error.stack);
+      throw error;
     }
   }
 

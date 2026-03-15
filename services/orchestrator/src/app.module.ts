@@ -12,7 +12,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { FiscalModule } from './fiscal/fiscal.module';
 import { OcrModule } from './ocr/ocr.module';
 import { MonolithModule } from './monolith/monolith.module';
-import { EmailModule } from './email/email.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,7 +29,7 @@ import { EmailModule } from './email/email.module';
     FiscalModule,
     OcrModule,
     MonolithModule,
-    EmailModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

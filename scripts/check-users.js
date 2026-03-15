@@ -1,10 +1,11 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
 async function checkUsers() {
   const connection = await mysql.createConnection({
-    host: 'localhost',
-    user: 'somaai',
-    password: 'somaai_password',
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USERNAME || process.env.DB_USER || 'somaai',
+    password: process.env.DB_PASSWORD,
     database: 'somaai_monolith',
   });
 

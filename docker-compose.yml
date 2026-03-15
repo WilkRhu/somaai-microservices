@@ -108,7 +108,7 @@ services:
       INVENTORY_SERVICE_URL: http://inventory:3002
       DELIVERY_SERVICE_URL: http://delivery:3003
       SUPPLIERS_SERVICE_URL: http://suppliers:3004
-      OFFERS_SERVICE_URL: http://offers:3005
+      OFFERS_SERVICE_URL: http://offers:3014
       FISCAL_SERVICE_URL: http://fiscal:3006
       OCR_SERVICE_URL: http://ocr:3007
       PAYMENTS_SERVICE_URL: http://payments:3008
@@ -260,7 +260,7 @@ services:
       dockerfile: Dockerfile
     container_name: offers-service
     ports:
-      - "3005:3005"
+      - "3014:3014"
     environment:
       NODE_ENV: production
       PORT: 3005
@@ -384,6 +384,51 @@ services:
       ORCHESTRATOR_SERVICE_URL: http://orchestrator:3009
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_EXPIRATION: 3600
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - somaai-network
+    restart: unless-stopped
+
+  notifications:
+    build:
+      context: ./services/notifications
+      dockerfile: Dockerfile
+    container_name: notifications-service
+    ports:
+      - "3015:3015"
+    environment:
+      NODE_ENV: production
+      PORT: 3015
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: notifications_db
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: notifications-service
+      KAFKA_GROUP_ID: notifications-group
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-your-sendgrid-api-key}
+      SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-somaai@wilkcaetano.com.br}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM:-somaai@wilkcaetano.com.br}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-SomaAI}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
     depends_on:
       mysql-master:
         condition: service_healthy
