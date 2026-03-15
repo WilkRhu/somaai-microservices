@@ -147,8 +147,70 @@ export class EstablishmentsService {
     };
   }
 
-  async getDashboard(establishmentId: string) {
+  async getSalesReport(
+    establishmentId: string,
+    filters: { startDate?: string; endDate?: string; status?: string },
+  ) {
     const establishment = await this.findOne(establishmentId);
+    if (!establishment) throw new NotFoundException('Estabelecimento não encontrado');
+
+    const query = this.salesRepository.createQueryBuilder('sale')
+      .where('sale.establishmentId = :establishmentId', { establishmentId });
+
+    if (filters.startDate) {
+      query.andWhere('sale.createdAt >= :startDate', { startDate: new Date(filters.startDate) });
+    }
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      query.andWhere('sale.createdAt <= :endDate', { endDate: end });
+    }
+    if (filters.status) {
+      query.andWhere('sale.status = :status', { status: filters.status });
+    }
+
+    query.orderBy('sale.createdAt', 'DESC');
+
+    const sales = await query.getMany();
+
+    const totalRevenue = sales.reduce((sum, s) => sum + Number(s.total), 0);
+    const totalDiscount = sales.reduce((sum, s) => sum + Number(s.discount), 0);
+    const avgTicket = sales.length > 0 ? totalRevenue / sales.length : 0;
+
+    const byStatus = sales.reduce((acc, s) => {
+      acc[s.status] = (acc[s.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const byPaymentMethod = sales.reduce((acc, s) => {
+      acc[s.paymentMethod] = (acc[s.paymentMethod] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      summary: {
+        totalSales: sales.length,
+        totalRevenue: Number(totalRevenue.toFixed(2)),
+        totalDiscount: Number(totalDiscount.toFixed(2)),
+        averageTicket: Number(avgTicket.toFixed(2)),
+        byStatus,
+        byPaymentMethod,
+      },
+      sales: sales.map(s => ({
+        id: s.id,
+        saleNumber: s.saleNumber,
+        total: Number(s.total),
+        discount: Number(s.discount),
+        subtotal: Number(s.subtotal),
+        status: s.status,
+        paymentMethod: s.paymentMethod,
+        customerId: s.customerId,
+        createdAt: s.createdAt,
+      })),
+    };
+  }
+
+  async getDashboard(establishmentId: string) {    const establishment = await this.findOne(establishmentId);
     if (!establishment) throw new NotFoundException('Estabelecimento não encontrado');
 
     const now = new Date();

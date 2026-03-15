@@ -70,6 +70,18 @@ export class BusinessController {
     return this.businessService.getDashboard(id, req.headers.authorization);
   }
 
+  @Get('establishments/:id/reports/sales')
+  @ApiOperation({ summary: 'Get sales report' })
+  async getSalesReport(
+    @Param('id') id: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('status') status?: string,
+    @Request() req?: any,
+  ) {
+    return this.businessService.getSalesReport(id, { startDate, endDate, status }, req?.headers.authorization);
+  }
+
   @Get('establishments/:id/inventory/alerts/expiring')
   @ApiOperation({ summary: 'Get expiring inventory items' })
   async getExpiringInventory(
@@ -78,6 +90,12 @@ export class BusinessController {
     @Request() req: any,
   ) {
     return this.businessService.getExpiringInventory(id, daysAhead, req.headers.authorization);
+  }
+
+  @Get('establishments/:id/inventory/alerts/low-stock')
+  @ApiOperation({ summary: 'Get low stock inventory items' })
+  async getLowStockInventory(@Param('id') id: string, @Request() req: any) {
+    return this.businessService.getLowStockInventory(id, req.headers.authorization);
   }
 
   // MercadoPago

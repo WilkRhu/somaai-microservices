@@ -58,6 +58,17 @@ export class EstablishmentsController {
     return this.establishmentsService.getDashboard(id);
   }
 
+  @Get(':id/reports/sales')
+  @ApiOperation({ summary: 'Get sales report for establishment' })
+  async getSalesReport(
+    @Param('id') id: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.establishmentsService.getSalesReport(id, { startDate, endDate, status });
+  }
+
   @Get(':id/loyalty-settings')
   @ApiOperation({ summary: 'Get loyalty settings' })
   async getLoyaltySettings(@Param('id') id: string) {
@@ -107,5 +118,28 @@ export class EstablishmentsController {
     @Query('daysAhead') daysAhead?: number,
   ) {
     return this.inventoryService.getExpiringItems(id, daysAhead ? Number(daysAhead) : 30);
+  }
+
+  @Get(':id/inventory/alerts/low-stock')
+  @ApiOperation({ summary: 'Get low stock inventory items' })
+  async getLowStockInventory(@Param('id') id: string) {
+    return this.inventoryService.getLowStockItems(id);
+  }
+
+  @Get(':id/inventory')
+  @ApiOperation({ summary: 'Get inventory items for establishment with filters' })
+  async getInventory(
+    @Param('id') id: string,
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'ASC' | 'DESC',
+  ) {
+    return this.inventoryService.findByEstablishment(id, {
+      search,
+      category,
+      sortBy,
+      sortOrder,
+    });
   }
 }

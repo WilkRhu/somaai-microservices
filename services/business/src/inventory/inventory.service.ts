@@ -67,4 +67,48 @@ export class InventoryService {
       .orderBy('item.expirationDate', 'ASC')
       .getMany();
   }
+
+  async getLowStockItems(establishmentId: string) {
+    return await this.inventoryRepository
+      .createQueryBuilder('item')
+      .where('item.establishmentId = :establishmentId', { establishmentId })
+      .andWhere('item.isActive = true')
+      .andWhere('item.quantity <= item.minQuantity')
+      .orderBy('item.quantity', 'ASC')
+      .getMany();
+  }
+
+  async findByEstablishment(
+    establishmentId: string,
+    filters?: {
+      search?: string;
+      category?: string;
+      sortBy?: string;
+      sortOrder?: 'ASC' | 'DESC';
+    },
+  ) {
+    let query = this.inventoryRepository
+      .createQueryBuilder('item')
+      .where('item.establishmentId = :establishmentId', { establishmentId })
+      .andWhere('item.isActive = true');
+
+    if (filters?.search) {
+      query = query.andWhere(
+        '(item.name ILIKE :search OR item.barcode ILIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    if (filters?.category) {
+      query = query.andWhere('item.category = :category', {
+        category: filters.category,
+      });
+    }
+
+    const sortBy = filters?.sortBy || 'createdAt';
+    const sortOrder = filters?.sortOrder || 'DESC';
+    query = query.orderBy(`item.${sortBy}`, sortOrder);
+
+    return await query.getMany();
+  }
 }

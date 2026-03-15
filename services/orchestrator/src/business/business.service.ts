@@ -167,8 +167,21 @@ export class BusinessService {
     return this.proxyRequest('GET', `/api/establishments/${establishmentId}/reports/dashboard`, undefined, authHeader);
   }
 
+  async getSalesReport(establishmentId: string, params: { startDate?: string; endDate?: string; status?: string }, authHeader?: string) {
+    const query = new URLSearchParams();
+    if (params.startDate) query.set('startDate', params.startDate);
+    if (params.endDate) query.set('endDate', params.endDate);
+    if (params.status) query.set('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/reports/sales${qs}`, undefined, authHeader);
+  }
+
   async getExpiringInventory(establishmentId: string, daysAhead: number, authHeader?: string) {
     return this.proxyRequest('GET', `/api/establishments/${establishmentId}/inventory/alerts/expiring?daysAhead=${daysAhead}`, undefined, authHeader);
+  }
+
+  async getLowStockInventory(establishmentId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/inventory/alerts/low-stock`, undefined, authHeader);
   }
 
   // MercadoPago
