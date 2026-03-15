@@ -336,9 +336,19 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3008
-      DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
-      REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka:9092
+      DB_HOST: mysql-master
+      DB_PORT: 3306
+      DB_USERNAME: somaai
+      DB_PASSWORD: somaai_password
+      DB_DATABASE: somaai_payments
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "false"
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: payments-service
+      KAFKA_GROUP_ID: payments-group
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN}
+      MERCADOPAGO_PUBLIC_KEY: ${MERCADOPAGO_PUBLIC_KEY}
     depends_on:
       mysql-master:
         condition: service_healthy

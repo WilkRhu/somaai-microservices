@@ -64,6 +64,22 @@ export class BusinessController {
     return this.businessService.deleteEstablishment(id, req.headers.authorization);
   }
 
+  @Get('establishments/:id/reports/dashboard')
+  @ApiOperation({ summary: 'Get establishment dashboard' })
+  async getDashboard(@Param('id') id: string, @Request() req: any) {
+    return this.businessService.getDashboard(id, req.headers.authorization);
+  }
+
+  @Get('establishments/:id/inventory/alerts/expiring')
+  @ApiOperation({ summary: 'Get expiring inventory items' })
+  async getExpiringInventory(
+    @Param('id') id: string,
+    @Query('daysAhead') daysAhead: number = 30,
+    @Request() req: any,
+  ) {
+    return this.businessService.getExpiringInventory(id, daysAhead, req.headers.authorization);
+  }
+
   // MercadoPago
   @Post('establishments/mercadopago/connect')
   @ApiOperation({ summary: 'Connect establishment to MercadoPago' })

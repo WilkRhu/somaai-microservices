@@ -14,6 +14,13 @@ export class InventoryItemResponseDto {
   productId: string;
 
   @ApiProperty({
+    example: 'establishment-uuid-123',
+    description: 'Establishment ID',
+    nullable: true,
+  })
+  establishmentId: string;
+
+  @ApiProperty({
     example: 100,
     description: 'Current quantity in stock',
   })
@@ -30,6 +37,13 @@ export class InventoryItemResponseDto {
     description: 'Maximum quantity threshold',
   })
   maxQuantity: number;
+
+  @ApiProperty({
+    example: '2026-12-31T00:00:00Z',
+    description: 'Expiration date',
+    nullable: true,
+  })
+  expirationDate: Date;
 
   @ApiProperty({
     example: '2026-03-12T10:00:00Z',

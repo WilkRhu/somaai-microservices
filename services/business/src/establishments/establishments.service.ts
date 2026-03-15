@@ -7,6 +7,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { Establishment } from './entities/establishment.entity';
 import { EstablishmentUser } from '../shared/entities/establishment-user.entity';
 import { UserService } from '../shared/services/user.service';
+import { Customer } from '../customers/entities/customer.entity';
+import { InventoryItem } from '../inventory/entities/inventory-item.entity';
+import { Sale } from '../sales/entities/sale.entity';
+import { Expense } from '../expenses/entities/expense.entity';
 
 @Injectable()
 export class EstablishmentsService {
@@ -18,6 +22,14 @@ export class EstablishmentsService {
     private establishmentsRepository: Repository<Establishment>,
     @InjectRepository(EstablishmentUser)
     private establishmentUsersRepository: Repository<EstablishmentUser>,
+    @InjectRepository(Customer)
+    private customersRepository: Repository<Customer>,
+    @InjectRepository(InventoryItem)
+    private inventoryRepository: Repository<InventoryItem>,
+    @InjectRepository(Sale)
+    private salesRepository: Repository<Sale>,
+    @InjectRepository(Expense)
+    private expensesRepository: Repository<Expense>,
     private httpService: HttpService,
     private userService: UserService,
   ) {}
@@ -131,6 +143,57 @@ export class EstablishmentsService {
         loyaltyPointsPerReal: pointsPerReal,
         description: `${pointsPerReal} pontos por real gasto`,
         example: `R$ 10,00 = ${Math.floor(10 * pointsPerReal)} pontos`,
+      },
+    };
+  }
+
+  async getDashboard(establishmentId: string) {
+    const establishment = await this.findOne(establishmentId);
+    if (!establishment) throw new NotFoundException('Estabelecimento não encontrado');
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const thirtyDaysAhead = new Date();
+    thirtyDaysAhead.setDate(now.getDate() + 30);
+
+    const [sales, expenses, customers, inventoryItems] = await Promise.all([
+      this.salesRepository.find({ where: { establishmentId } }),
+      this.expensesRepository.find({ where: { establishmentId } }),
+      this.customersRepository.find({ where: { establishmentId } }),
+      this.inventoryRepository.find({ where: { establishmentId, isActive: true } }),
+    ]);
+
+    const monthlySales = sales.filter(s => s.createdAt >= startOfMonth && s.createdAt <= endOfMonth);
+    const totalRevenue = monthlySales.reduce((sum, s) => sum + Number(s.total), 0);
+    const totalExpenses = expenses
+      .filter(e => e.expenseDate >= startOfMonth && e.expenseDate <= endOfMonth)
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    const lowStockItems = inventoryItems.filter(i => i.quantity <= i.minQuantity);
+    const expiringItems = inventoryItems.filter(
+      i => i.expirationDate && new Date(i.expirationDate) <= thirtyDaysAhead,
+    );
+
+    return {
+      establishment: {
+        id: establishment.id,
+        name: establishment.name,
+        loyaltyEnabled: establishment.loyaltyEnabled,
+      },
+      summary: {
+        totalSalesThisMonth: monthlySales.length,
+        totalRevenueThisMonth: Number(totalRevenue.toFixed(2)),
+        totalExpensesThisMonth: Number(totalExpenses.toFixed(2)),
+        netProfitThisMonth: Number((totalRevenue - totalExpenses).toFixed(2)),
+        totalCustomers: customers.length,
+        totalInventoryItems: inventoryItems.length,
+        lowStockAlerts: lowStockItems.length,
+        expiringAlerts: expiringItems.length,
+      },
+      alerts: {
+        lowStock: lowStockItems.slice(0, 5).map(i => ({ id: i.id, name: i.name, quantity: i.quantity, minQuantity: i.minQuantity })),
+        expiring: expiringItems.slice(0, 5).map(i => ({ id: i.id, name: i.name, expirationDate: i.expirationDate })),
       },
     };
   }

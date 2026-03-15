@@ -1,5 +1,5 @@
-import { IsString, IsNumber, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNumber, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateInventoryItemDto {
   @ApiProperty({
@@ -9,6 +9,22 @@ export class CreateInventoryItemDto {
   @IsNotEmpty()
   @IsString()
   productId: string;
+
+  @ApiPropertyOptional({
+    example: 'establishment-uuid-123',
+    description: 'Establishment ID',
+  })
+  @IsOptional()
+  @IsString()
+  establishmentId?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-12-31T00:00:00Z',
+    description: 'Expiration date of the item',
+  })
+  @IsOptional()
+  @IsDateString()
+  expirationDate?: string;
 
   @ApiProperty({
     example: 100,

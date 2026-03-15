@@ -8,6 +8,9 @@ export class InventoryItemEntity {
   @Column()
   productId: string;
 
+  @Column({ nullable: true })
+  establishmentId: string;
+
   @Column('int')
   quantity: number;
 
@@ -16,6 +19,9 @@ export class InventoryItemEntity {
 
   @Column('int')
   maxQuantity: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expirationDate: Date;
 
   @CreateDateColumn()
   createdAt: Date;

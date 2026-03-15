@@ -49,4 +49,22 @@ export class InventoryService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async getExpiringItems(establishmentId: string, daysAhead: number = 30) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+    futureDate.setHours(23, 59, 59, 999);
+
+    return await this.inventoryRepository
+      .createQueryBuilder('item')
+      .where('item.establishmentId = :establishmentId', { establishmentId })
+      .andWhere('item.isActive = true')
+      .andWhere('item.expirationDate IS NOT NULL')
+      .andWhere('item.expirationDate >= :today', { today })
+      .andWhere('item.expirationDate <= :futureDate', { futureDate })
+      .orderBy('item.expirationDate', 'ASC')
+      .getMany();
+  }
 }

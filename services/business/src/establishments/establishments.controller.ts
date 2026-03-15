@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Patch, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Patch, Request, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { EstablishmentsService } from './establishments.service';
 import { CustomersService } from '../customers/customers.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { AuthGuard } from '../common/guards/auth.guard';
 
 @ApiTags('Establishments')
@@ -11,6 +12,7 @@ export class EstablishmentsController {
   constructor(
     private readonly establishmentsService: EstablishmentsService,
     private readonly customersService: CustomersService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   @Post()
@@ -48,6 +50,12 @@ export class EstablishmentsController {
   @ApiOperation({ summary: 'Delete establishment' })
   async remove(@Param('id') id: string) {
     return this.establishmentsService.remove(id);
+  }
+
+  @Get(':id/reports/dashboard')
+  @ApiOperation({ summary: 'Get establishment dashboard' })
+  async getDashboard(@Param('id') id: string) {
+    return this.establishmentsService.getDashboard(id);
   }
 
   @Get(':id/loyalty-settings')
@@ -90,5 +98,14 @@ export class EstablishmentsController {
     @Body() body: { points: number },
   ) {
     return this.customersService.redeemPoints(customerId, body.points);
+  }
+
+  @Get(':id/inventory/alerts/expiring')
+  @ApiOperation({ summary: 'Get expiring inventory items' })
+  async getExpiringInventory(
+    @Param('id') id: string,
+    @Query('daysAhead') daysAhead?: number,
+  ) {
+    return this.inventoryService.getExpiringItems(id, daysAhead ? Number(daysAhead) : 30);
   }
 }

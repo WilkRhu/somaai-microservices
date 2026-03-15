@@ -19,9 +19,11 @@ export class InventoryService {
     try {
       const item = this.itemRepository.create({
         productId: dto.productId,
+        establishmentId: dto.establishmentId,
         quantity: dto.quantity,
         minQuantity: dto.minQuantity,
         maxQuantity: dto.maxQuantity,
+        expirationDate: dto.expirationDate ? new Date(dto.expirationDate) : null,
       });
 
       await this.itemRepository.save(item);
@@ -163,13 +165,32 @@ export class InventoryService {
     return reorderItems;
   }
 
+  async getExpiringItems(establishmentId: string, daysAhead: number): Promise<InventoryItemResponseDto[]> {
+    const now = new Date();
+    const limit = new Date();
+    limit.setDate(limit.getDate() + daysAhead);
+
+    const items = await this.itemRepository
+      .createQueryBuilder('item')
+      .where('item.establishmentId = :establishmentId', { establishmentId })
+      .andWhere('item.expirationDate IS NOT NULL')
+      .andWhere('item.expirationDate >= :now', { now })
+      .andWhere('item.expirationDate <= :limit', { limit })
+      .orderBy('item.expirationDate', 'ASC')
+      .getMany();
+
+    return items.map((item) => this.mapToDto(item));
+  }
+
   private mapToDto(item: InventoryItemEntity): InventoryItemResponseDto {
     return {
       id: item.id,
       productId: item.productId,
+      establishmentId: item.establishmentId,
       quantity: item.quantity,
       minQuantity: item.minQuantity,
       maxQuantity: item.maxQuantity,
+      expirationDate: item.expirationDate,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     };

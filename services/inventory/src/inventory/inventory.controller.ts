@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Param, Body, Patch, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Get, Param, Body, Patch, Delete, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
 import { UpdateInventoryItemDto } from './dto/update-inventory-item.dto';
@@ -11,6 +11,18 @@ import { Auth } from '../common/decorators/auth.decorator';
 @Controller('api/inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
+
+  @Get('establishments/:establishmentId/alerts/expiring')
+  @Auth()
+  @ApiOperation({ summary: 'Get expiring inventory items for an establishment' })
+  @ApiQuery({ name: 'daysAhead', required: false, type: Number, description: 'Days ahead to check (default: 30)' })
+  @ApiResponse({ status: 200, description: 'Expiring items list', type: [InventoryItemResponseDto] })
+  async getExpiringItems(
+    @Param('establishmentId') establishmentId: string,
+    @Query('daysAhead', new DefaultValuePipe(30), ParseIntPipe) daysAhead: number,
+  ): Promise<InventoryItemResponseDto[]> {
+    return this.inventoryService.getExpiringItems(establishmentId, daysAhead);
+  }
 
   @Post()
   @Auth()

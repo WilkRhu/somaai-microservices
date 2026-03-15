@@ -163,6 +163,14 @@ export class BusinessService {
     return this.proxyRequest('DELETE', `/api/suppliers/${id}`, undefined, authHeader);
   }
 
+  async getDashboard(establishmentId: string, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/reports/dashboard`, undefined, authHeader);
+  }
+
+  async getExpiringInventory(establishmentId: string, daysAhead: number, authHeader?: string) {
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/inventory/alerts/expiring?daysAhead=${daysAhead}`, undefined, authHeader);
+  }
+
   // MercadoPago
   async mercadopagoConnect(data: any, authHeader?: string) {
     return this.proxyRequest('POST', '/api/establishments/mercadopago/connect', data, authHeader);
