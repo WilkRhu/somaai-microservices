@@ -1,0 +1,1 @@
+{"version":3,"file":"send-email.dto.d.ts","sourceRoot":"","sources":["../../../src/email/dto/send-email.dto.ts"],"names":[],"mappings":"AAGA,qBAAa,YAAY;IAMvB,EAAE,EAAG,MAAM,CAAC;IAQZ,EAAE,CAAC,EAAE,MAAM,CAAC;IAQZ,GAAG,CAAC,EAAE,MAAM,CAAC;IAOb,OAAO,EAAG,MAAM,CAAC;IAOjB,QAAQ,EAAG,MAAM,CAAC;IAOlB,IAAI,EAAG,MAAM,CAAC,MAAM,EAAE,GAAG,CAAC,CAAC;CAC5B"}

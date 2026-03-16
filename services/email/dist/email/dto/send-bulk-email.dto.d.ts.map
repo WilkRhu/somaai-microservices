@@ -1,0 +1,1 @@
+{"version":3,"file":"send-bulk-email.dto.d.ts","sourceRoot":"","sources":["../../../src/email/dto/send-bulk-email.dto.ts"],"names":[],"mappings":"AAGA,qBAAa,gBAAgB;IAO3B,UAAU,EAAG,MAAM,EAAE,CAAC;IAOtB,OAAO,EAAG,MAAM,CAAC;IAOjB,QAAQ,EAAG,MAAM,CAAC;IAOlB,IAAI,EAAG,MAAM,CAAC,MAAM,EAAE,GAAG,CAAC,CAAC;CAC5B"}
