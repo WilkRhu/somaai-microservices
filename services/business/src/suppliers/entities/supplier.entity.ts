@@ -32,6 +32,18 @@ export class Supplier {
   @Column('text', { nullable: true })
   address: string;
 
+  @Column('varchar', { length: 255, nullable: true })
+  street: string;
+
+  @Column('varchar', { length: 20, nullable: true })
+  number: string;
+
+  @Column('varchar', { length: 100, nullable: true })
+  complement: string;
+
+  @Column('varchar', { length: 100, nullable: true })
+  neighborhood: string;
+
   @Column('varchar', { length: 100, nullable: true })
   city: string;
 
@@ -43,6 +55,12 @@ export class Supplier {
 
   @Column('varchar', { length: 255, nullable: true })
   contactPerson: string;
+
+  @Column('text', { nullable: true })
+  notes: string;
+
+  @Column('varchar', { length: 500, nullable: true })
+  image: string;
 
   @Column('boolean', { default: true })
   isActive: boolean;

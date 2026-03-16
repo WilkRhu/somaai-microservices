@@ -20,7 +20,40 @@ export class OffersService {
     const item = offer.itemId
       ? await this.inventoryRepository.findOne({ where: { id: offer.itemId } })
       : null;
-    return { ...offer, itemName: item?.name ?? null };
+    const salePrice = item ? parseFloat(item.salePrice as any) : 0;
+    const offerPrice = parseFloat(offer.offerPrice as any);
+    const discountPercentage = salePrice > 0
+      ? Math.round(((salePrice - offerPrice) / salePrice) * 100 * 100) / 100
+      : 0;
+    return {
+      ...offer,
+      discountPercentage,
+      item: item ? {
+        id: item.id,
+        name: item.name,
+        brand: item.brand,
+        category: item.category,
+        salePrice: item.salePrice,
+        quantity: item.quantity,
+        unit: item.unit,
+        images: item.images,
+      } : null,
+    };
+  }
+  async getActiveOfferForItem(itemId: string): Promise<Offer | null> {
+    const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    const offer = await this.offerRepository
+      .createQueryBuilder('offer')
+      .where('offer.itemId = :itemId', { itemId })
+      .andWhere('offer.isActive = :isActive', { isActive: true })
+      .andWhere('offer.startDate <= :today', { today })
+      .andWhere(
+        '(offer.endDate >= :today OR offer.endDate IS NULL OR offer.whileStockLasts = :whileStockLasts)',
+        { today, whileStockLasts: true },
+      )
+      .orderBy('offer.offerPrice', 'ASC')
+      .getOne();
+    return offer || null;
   }
 
   async findActiveOffer(establishmentId: string, offerId: string) {
@@ -31,7 +64,6 @@ export class OffersService {
   }
 
   async createOffer(createOfferDto: any) {
-    // Calcula endDate a partir de durationHours se não fornecido
     if (!createOfferDto.endDate && createOfferDto.durationHours) {
       const start = new Date(createOfferDto.startDate);
       createOfferDto.endDate = new Date(start.getTime() + createOfferDto.durationHours * 60 * 60 * 1000);

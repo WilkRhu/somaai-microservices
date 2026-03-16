@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { InventoryItem } from './entities/inventory-item.entity';
 import { StockMovement } from './entities/stock-movement.entity';
+import { OffersService } from '../offers/offers.service';
 
 @Injectable()
 export class InventoryService {
@@ -16,6 +17,8 @@ export class InventoryService {
     @InjectRepository(StockMovement)
     private readonly stockMovementRepository: Repository<StockMovement>,
     private readonly httpService: HttpService,
+    @Inject(forwardRef(() => OffersService))
+    private readonly offersService: OffersService,
   ) {}
 
   private async uploadImages(images: string[]): Promise<string[]> {
@@ -57,23 +60,42 @@ export class InventoryService {
     return { success: true, data: await this.findOne(id) };
   }
 
+  private async withOffer(item: InventoryItem) {
+    const activeOffer = await this.offersService.getActiveOfferForItem(item.id);
+    const images = (item.images || []).filter(
+      (img) => img && !img.startsWith('data:'),
+    );
+    let offerWithDiscount: any = null;
+    if (activeOffer) {
+      const salePrice = parseFloat(item.salePrice as any);
+      const offerPrice = parseFloat(activeOffer.offerPrice as any);
+      const discountPercentage = salePrice > 0
+        ? Math.round(((salePrice - offerPrice) / salePrice) * 100 * 100) / 100
+        : 0;
+      offerWithDiscount = { ...activeOffer, discountPercentage };
+    }
+    return Object.assign({}, item, { images, activeOffer: offerWithDiscount });
+  }
+
   async create(createItemDto: any) {
     const item = this.inventoryRepository.create(createItemDto);
     return await this.inventoryRepository.save(item);
   }
 
   async findAll(establishmentId: string) {
-    return await this.inventoryRepository.find({
+    const items = await this.inventoryRepository.find({
       where: { establishmentId },
       order: { createdAt: 'DESC' },
     });
+    return Promise.all(items.map((i) => this.withOffer(i)));
   }
 
   async findOne(id: string) {
-    return await this.inventoryRepository
+    const item = await this.inventoryRepository
       .createQueryBuilder('item')
       .where('item.id = :id', { id })
       .getOne();
+    return item ? this.withOffer(item) : null;
   }
 
   async update(id: string, updateItemDto: any) {
@@ -164,10 +186,11 @@ export class InventoryService {
     query = query.orderBy(`item.${sortBy}`, sortOrder);
 
     const [data, total] = await query.skip(skip).take(limit).getManyAndCount();
+    const dataWithOffers = await Promise.all(data.map((i) => this.withOffer(i)));
 
     return {
       success: true,
-      data,
+      data: dataWithOffers,
       total,
       page,
       limit,

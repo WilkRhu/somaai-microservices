@@ -20,10 +20,13 @@ export class Expense {
   @Column('varchar', { length: 36 })
   establishmentId: string;
 
-  @Column({
-    type: 'enum',
-    enum: ExpenseCategory,
-  })
+  @Column('varchar', { length: 36, nullable: true })
+  supplierId: string;
+
+  @Column('varchar', { length: 36, nullable: true })
+  createdById: string;
+
+  @Column({ type: 'enum', enum: ExpenseCategory })
   category: ExpenseCategory;
 
   @Column('varchar', { length: 255 })
@@ -32,17 +35,10 @@ export class Expense {
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column({
-    type: 'enum',
-    enum: PaymentMethod,
-  })
+  @Column({ type: 'enum', enum: PaymentMethod, nullable: true })
   paymentMethod: PaymentMethod;
 
-  @Column({
-    type: 'enum',
-    enum: ExpenseStatus,
-    default: ExpenseStatus.PENDING,
-  })
+  @Column({ type: 'enum', enum: ExpenseStatus, default: ExpenseStatus.PENDING })
   status: ExpenseStatus;
 
   @Column('date')
@@ -52,7 +48,13 @@ export class Expense {
   dueDate: Date;
 
   @Column('date', { nullable: true })
-  paidDate: Date;
+  paymentDate: Date;
+
+  @Column('boolean', { default: false })
+  isRecurring: boolean;
+
+  @Column('varchar', { length: 50, nullable: true })
+  recurrenceInterval: string;
 
   @Column('text', { nullable: true })
   notes: string;

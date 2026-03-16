@@ -16,9 +16,10 @@ import { CustomersModule } from '../customers/customers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SalesModule } from '../sales/sales.module';
 import { ExpensesModule } from '../expenses/expenses.module';
+import { SuppliersModule } from '../suppliers/suppliers.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Establishment, EstablishmentMember, EstablishmentUser, Customer, InventoryItem, Sale, Expense]), HttpModule, CommonModule, KafkaModule, CustomersModule, InventoryModule, SalesModule, ExpensesModule],
+  imports: [TypeOrmModule.forFeature([Establishment, EstablishmentMember, EstablishmentUser, Customer, InventoryItem, Sale, Expense]), HttpModule, CommonModule, KafkaModule, CustomersModule, InventoryModule, SalesModule, ExpensesModule, SuppliersModule],
   controllers: [EstablishmentsController],
   providers: [EstablishmentsService],
   exports: [EstablishmentsService],

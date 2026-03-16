@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Sale } from './entities/sale.entity';
@@ -6,6 +6,7 @@ import { SaleItem } from './entities/sale-item.entity';
 import { SaleStatus } from './enums/sale-status.enum';
 import { InventoryService } from '../inventory/inventory.service';
 import { StockMovementType } from '../inventory/enums/stock-movement-type.enum';
+import { OffersService } from '../offers/offers.service';
 
 @Injectable()
 export class SalesService {
@@ -15,6 +16,8 @@ export class SalesService {
     @InjectRepository(SaleItem)
     private readonly saleItemRepository: Repository<SaleItem>,
     private readonly inventoryService: InventoryService,
+    @Inject(forwardRef(() => OffersService))
+    private readonly offersService: OffersService,
   ) {}
 
   async create(createSaleDto: any) {
@@ -77,6 +80,15 @@ export class SalesService {
   }
 
   async addItem(saleId: string, createSaleItemDto: any) {
+    // Aplica preço de oferta se existir
+    if (createSaleItemDto.itemId) {
+      const activeOffer = await this.offersService.getActiveOfferForItem(createSaleItemDto.itemId);
+      if (activeOffer && !createSaleItemDto.offerApplied) {
+        createSaleItemDto.unitPrice = activeOffer.offerPrice;
+        createSaleItemDto.offerApplied = true;
+      }
+    }
+
     // Calcula o total do item se não fornecido
     if (!createSaleItemDto.total) {
       const subtotal = createSaleItemDto.unitPrice * createSaleItemDto.quantity;

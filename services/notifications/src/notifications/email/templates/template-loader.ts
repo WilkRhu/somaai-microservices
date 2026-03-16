@@ -1,4 +1,6 @@
 import { getBusinessWelcomeTemplate } from './business/welcome.template';
+import { getCustomerWelcomeTemplate } from './business/customer-welcome.template';
+import { getEmployeeWelcomeTemplate } from './business/employee-welcome.template';
 import { getAdminWelcomeTemplate } from './admin/welcome.template';
 import { getSupportWelcomeTemplate } from './support/welcome.template';
 import { getUserWelcomeTemplate } from './user/welcome.template';
@@ -17,6 +19,8 @@ export class TemplateLoader {
   private loadBuiltInTemplates() {
     // Business templates
     this.templates.set('business-welcome', (data) => getBusinessWelcomeTemplate(data?.firstName || 'User'));
+    this.templates.set('customer-welcome', (data) => getCustomerWelcomeTemplate(data?.name || 'Cliente', data?.establishmentName));
+    this.templates.set('employee-welcome', (data) => getEmployeeWelcomeTemplate(data?.name || 'Funcionário', data?.email || '', data?.password || '', data?.establishmentName));
     
     // Admin templates
     this.templates.set('admin-welcome', (data) => getAdminWelcomeTemplate(data?.firstName || 'Admin', data?.expirationDate || 'Indefinido'));

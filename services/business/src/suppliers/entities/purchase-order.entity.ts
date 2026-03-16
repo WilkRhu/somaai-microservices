@@ -9,8 +9,8 @@ import {
 
 export enum PurchaseOrderStatus {
   PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  RECEIVED = 'received',
+  APPROVED = 'approved',
+  DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
 }
 
@@ -27,6 +27,9 @@ export class PurchaseOrder {
   @Column('varchar', { length: 36 })
   supplierId: string;
 
+  @Column('varchar', { length: 36, nullable: true })
+  createdById: string;
+
   @Column('varchar', { length: 50, unique: true })
   orderNumber: string;
 
@@ -40,11 +43,19 @@ export class PurchaseOrder {
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
 
+  @Column('json', { nullable: true })
+  items: Array<{
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+  }>;
+
   @Column('date', { nullable: true })
   expectedDeliveryDate: Date;
 
   @Column('date', { nullable: true })
-  deliveryDate: Date;
+  deliveredDate: Date;
 
   @Column('text', { nullable: true })
   notes: string;

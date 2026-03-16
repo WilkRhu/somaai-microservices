@@ -7,7 +7,6 @@ export class BusinessService {
   private readonly logger = new Logger(BusinessService.name);
   private businessServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
   private uploadServiceUrl = process.env.UPLOAD_SERVICE_URL || 'http://localhost:3008';
-  private offersServiceUrl = process.env.OFFERS_SERVICE_URL || 'http://localhost:3014';
 
   constructor(private httpService: HttpService) {}
 
@@ -278,64 +277,5 @@ export class BusinessService {
 
   async redeemCustomerLoyaltyPoints(establishmentId: string, customerId: string, data: any, authHeader?: string) {
     return this.proxyRequest('POST', `/api/establishments/${establishmentId}/customers/${customerId}/loyalty/redeem`, data, authHeader);
-  }
-
-  // Offers
-  async createOffer(data: any, authHeader?: string) {
-    return this.proxyOfferRequest('POST', '/api/offers', data, authHeader);
-  }
-
-  async listOffers(skip?: number, take?: number, authHeader?: string) {
-    return this.proxyOfferRequest('GET', `/api/offers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
-  }
-
-  async getOffer(id: string, authHeader?: string) {
-    return this.proxyOfferRequest('GET', `/api/offers/${id}`, undefined, authHeader);
-  }
-
-  async updateOffer(id: string, data: any, authHeader?: string) {
-    return this.proxyOfferRequest('PUT', `/api/offers/${id}`, data, authHeader);
-  }
-
-  async deleteOffer(id: string, authHeader?: string) {
-    return this.proxyOfferRequest('DELETE', `/api/offers/${id}`, undefined, authHeader);
-  }
-
-  async proxyOfferRequest(method: string, path: string, data?: any, authHeader?: string) {
-    const url = `${this.offersServiceUrl}${path}`;
-
-    this.logger.log(`🔗 [PROXY OFFER REQUEST] ${method} ${url}`);
-
-    try {
-      const headers: any = { 'Content-Type': 'application/json' };
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
-
-      const response = await firstValueFrom(
-        this.httpService.request({ method: method.toLowerCase(), url, data, headers }),
-      );
-
-      this.logger.log(`✅ [PROXY OFFER REQUEST] Success: ${method} ${url}`);
-      return response.data;
-    } catch (error) {
-      this.logger.error(`❌ [PROXY OFFER REQUEST] Failed: ${method} ${url}`);
-      this.logger.error(`❌ [PROXY OFFER REQUEST] Error message: ${error.message}`);
-      if (error.response) {
-        this.logger.error(`❌ [PROXY OFFER REQUEST] Response status: ${error.response.status}`);
-        this.logger.error(`❌ [PROXY OFFER REQUEST] Response data:`, JSON.stringify(error.response.data, null, 2));
-      }
-
-      if (error.response) {
-        throw new HttpException(
-          error.response.data || error.message,
-          error.response.status || HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      } else if (error.request) {
-        throw new HttpException('Offers service not responding', HttpStatus.SERVICE_UNAVAILABLE);
-      } else {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-    }
   }
 }

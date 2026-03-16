@@ -40,6 +40,18 @@ export class OffersController {
     return await this.offersService.findActiveOffer(establishmentId, offerId);
   }
 
+  @Get('public/establishments/:establishmentId')
+  async findPublicOffers(
+    @Param('establishmentId') establishmentId: string,
+  ) {
+    return await this.offersService.findAllOffers(establishmentId, true);
+  }
+
+  @Get('items/:itemId/active-offer')
+  async getActiveOfferForItem(@Param('itemId') itemId: string) {
+    return await this.offersService.getActiveOfferForItem(itemId);
+  }
+
   @Get(':id')
   async findOneOffer(@Param('id') id: string) {
     return await this.offersService.findOneOffer(id);
