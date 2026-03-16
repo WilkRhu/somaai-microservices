@@ -31,6 +31,9 @@ logs/
 *.sql
 *.db
 
-# Temporary
-tmp/
-temp/
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/.terraform.lock.hcl
+infra/terraform.tfvars
