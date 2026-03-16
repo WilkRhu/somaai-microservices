@@ -441,35 +441,6 @@ services:
       - somaai-network
     restart: unless-stopped
 
-  email:
-    build:
-      context: ./services/email
-      dockerfile: Dockerfile
-    container_name: email-service
-    ports:
-      - "3012:3012"
-    environment:
-      NODE_ENV: production
-      PORT: 3012
-      REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: redpanda:29092
-      EMAIL_PROVIDER: sendgrid
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-your-sendgrid-api-key}
-      SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
-      SMTP_PORT: ${SMTP_PORT:-465}
-      SMTP_USER: ${SMTP_USER:-somaai@wilkcaetano.com.br}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
-      SMTP_FROM: ${SMTP_FROM:-somaai@wilkcaetano.com.br}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-SomaAI}
-    depends_on:
-      redis:
-        condition: service_healthy
-      redpanda:
-        condition: service_healthy
-    networks:
-      - somaai-network
-    restart: unless-stopped
-
   upload:
     build:
       context: ./services/upload
