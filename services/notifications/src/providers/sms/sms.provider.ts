@@ -12,13 +12,21 @@ export class SmsProvider {
   private client: any;
 
   constructor() {
-    this.client = twilio(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN,
-    );
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    if (accountSid && authToken) {
+      this.client = twilio(accountSid, authToken);
+    } else {
+      this.logger.warn('Twilio credentials not configured. SMS notifications will be disabled.');
+    }
   }
 
   async send(options: SmsOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.client) {
+      this.logger.warn('Twilio not configured, skipping SMS');
+      return { success: false, error: 'Twilio not configured' };
+    }
     try {
       const message = await this.client.messages.create({
         body: options.message,
