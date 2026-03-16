@@ -50,7 +50,7 @@ export class Sale {
   @Column('varchar', { length: 36, nullable: true })
   customerId: string;
 
-  @Column('varchar', { length: 36 })
+  @Column('varchar', { length: 36, nullable: true })
   sellerId: string;
 
   @Column('int', { nullable: true })

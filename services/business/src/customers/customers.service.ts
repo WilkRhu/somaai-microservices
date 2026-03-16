@@ -68,4 +68,11 @@ export class CustomersService {
     });
     return this.findOne(customerId);
   }
+
+  async findByEstablishment(establishmentId: string) {
+    return this.customersRepository.find({
+      where: { establishmentId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

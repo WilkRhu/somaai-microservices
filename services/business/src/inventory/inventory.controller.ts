@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   Query,
 } from '@nestjs/common';
@@ -34,10 +35,25 @@ export class InventoryController {
     return await this.inventoryService.update(id, updateItemDto);
   }
 
+  @Patch(':id')
+  async patch(@Param('id') id: string, @Body() updateItemDto: any) {
+    return await this.inventoryService.update(id, updateItemDto);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.inventoryService.remove(id);
     return { success: true };
+  }
+
+  @Delete(':id/images')
+  async removeImages(@Param('id') id: string, @Body() body: { images: string[] }) {
+    return await this.inventoryService.removeImages(id, body.images);
+  }
+
+  @Post(':id/images')
+  async addImages(@Param('id') id: string, @Body() body: { images: string[] }) {
+    return await this.inventoryService.addImages(id, body.images);
   }
 
   @Post('movements')

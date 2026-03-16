@@ -15,6 +15,7 @@ import { OffersModule } from './offers/offers.module';
 import { UsersModule } from './users/users.module';
 import { KafkaModule } from './shared/kafka/kafka.module';
 import { MercadopagoModule } from './mercadopago/mercadopago.module';
+import { ScannerModule } from './scanner/scanner.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { MercadopagoModule } from './mercadopago/mercadopago.module';
     SuppliersModule,
     OffersModule,
     MercadopagoModule,
+    ScannerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

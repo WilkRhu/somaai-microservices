@@ -13,6 +13,7 @@ import { FiscalModule } from './fiscal/fiscal.module';
 import { OcrModule } from './ocr/ocr.module';
 import { MonolithModule } from './monolith/monolith.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     OcrModule,
     MonolithModule,
     NotificationsModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

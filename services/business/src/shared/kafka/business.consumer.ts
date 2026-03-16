@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Establishment } from '../../establishments/entities/establishment.entity';
 import { EstablishmentUser } from '../entities/establishment-user.entity';
 import { UserService } from '../services/user.service';
+import { KafkaProducerService } from './kafka-producer.service';
 
 @Injectable()
 export class BusinessConsumer {
@@ -16,13 +17,15 @@ export class BusinessConsumer {
     @InjectRepository(EstablishmentUser)
     private establishmentUsersRepository: Repository<EstablishmentUser>,
     private userService: UserService,
+    private kafkaProducerService: KafkaProducerService,
   ) {}
 
   async handleUserCreated(message: any) {
     try {
       const { id: userId, role, email, firstName, lastName } = message;
 
-      this.logger.log(`Processing user.created event for user: ${userId}`);
+      this.logger.log(`🎯 [USER.CREATED] Processing user.created event for user: ${userId}`);
+      this.logger.log(`   Email: ${email}, Name: ${firstName} ${lastName}, Role: ${role}`);
 
       // Sync user to business database
       try {
@@ -33,10 +36,30 @@ export class BusinessConsumer {
           lastName,
           role,
         });
-        this.logger.log(`User ${userId} synced to business database`);
+        this.logger.log(`✅ User ${userId} synced to business database`);
       } catch (error) {
-        this.logger.error(`Failed to sync user to business database: ${error.message}`);
+        this.logger.error(`❌ Failed to sync user to business database: ${error.message}`);
         // Don't fail the whole process if user sync fails
+      }
+
+      // Send welcome email
+      try {
+        this.logger.log(`📧 Publishing welcome email event for user: ${email}`);
+        await this.kafkaProducerService.publishEvent('notification.email.send', {
+          userId,
+          to: email,
+          subject: 'Welcome to SomaAI',
+          template: 'welcome',
+          data: {
+            firstName,
+            lastName,
+            email,
+          },
+        });
+        this.logger.log(`✅ Welcome email event published for user: ${email}`);
+      } catch (error) {
+        this.logger.error(`❌ Failed to publish welcome email event: ${error.message}`);
+        // Don't fail the whole process if email fails
       }
 
       // Only create establishment for BUSINESS_OWNER users

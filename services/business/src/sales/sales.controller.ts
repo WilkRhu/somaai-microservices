@@ -53,4 +53,9 @@ export class SalesController {
     await this.salesService.removeItem(itemId);
     return { success: true };
   }
+
+  @Post(':saleId/cancel')
+  async cancelSale(@Param('saleId') saleId: string, @Body() body: any) {
+    return await this.salesService.cancel(saleId, body?.reason);
+  }
 }

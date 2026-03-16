@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Offer } from './entities/offer.entity';
 import { OfferNotification } from './entities/offer-notification.entity';
+import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 
 @Injectable()
 export class OffersService {
@@ -11,27 +12,52 @@ export class OffersService {
     private readonly offerRepository: Repository<Offer>,
     @InjectRepository(OfferNotification)
     private readonly offerNotificationRepository: Repository<OfferNotification>,
+    @InjectRepository(InventoryItem)
+    private readonly inventoryRepository: Repository<InventoryItem>,
   ) {}
 
-  async createOffer(createOfferDto: any) {
-    const offer = this.offerRepository.create(createOfferDto);
-    return await this.offerRepository.save(offer);
+  private async withItemName(offer: Offer) {
+    const item = offer.itemId
+      ? await this.inventoryRepository.findOne({ where: { id: offer.itemId } })
+      : null;
+    return { ...offer, itemName: item?.name ?? null };
   }
 
-  async findAllOffers(establishmentId: string) {
-    return await this.offerRepository.find({
-      where: { establishmentId },
-      order: { createdAt: 'DESC' },
+  async findActiveOffer(establishmentId: string, offerId: string) {
+    const offer = await this.offerRepository.findOne({
+      where: { id: offerId, establishmentId, isActive: true },
     });
+    return offer ? this.withItemName(offer) : null;
+  }
+
+  async createOffer(createOfferDto: any) {
+    // Calcula endDate a partir de durationHours se não fornecido
+    if (!createOfferDto.endDate && createOfferDto.durationHours) {
+      const start = new Date(createOfferDto.startDate);
+      createOfferDto.endDate = new Date(start.getTime() + createOfferDto.durationHours * 60 * 60 * 1000);
+    }
+    delete createOfferDto.durationHours;
+
+    const offer = this.offerRepository.create(createOfferDto);
+    const saved = await this.offerRepository.save(offer) as unknown as Offer;
+    return this.withItemName(saved);
+  }
+
+  async findAllOffers(establishmentId: string, isActive?: boolean) {
+    const where: any = { establishmentId };
+    if (isActive !== undefined) where.isActive = isActive;
+    const offers = await this.offerRepository.find({ where, order: { createdAt: 'DESC' } });
+    return Promise.all(offers.map((o) => this.withItemName(o)));
   }
 
   async findOneOffer(id: string) {
-    return await this.offerRepository.findOne({ where: { id } });
+    const offer = await this.offerRepository.findOne({ where: { id } });
+    return offer ? this.withItemName(offer) : null;
   }
 
   async updateOffer(id: string, updateOfferDto: any) {
     await this.offerRepository.update(id, updateOfferDto);
-    return await this.findOneOffer(id);
+    return this.findOneOffer(id);
   }
 
   async removeOffer(id: string) {
@@ -39,9 +65,7 @@ export class OffersService {
   }
 
   async createNotification(createNotificationDto: any) {
-    const notification = this.offerNotificationRepository.create(
-      createNotificationDto,
-    );
+    const notification = this.offerNotificationRepository.create(createNotificationDto);
     return await this.offerNotificationRepository.save(notification);
   }
 
@@ -53,11 +77,7 @@ export class OffersService {
   }
 
   async markAsViewed(notificationId: string) {
-    await this.offerNotificationRepository.update(notificationId, {
-      viewedAt: new Date(),
-    });
-    return await this.offerNotificationRepository.findOne({
-      where: { id: notificationId },
-    });
+    await this.offerNotificationRepository.update(notificationId, { viewedAt: new Date() });
+    return await this.offerNotificationRepository.findOne({ where: { id: notificationId } });
   }
 }

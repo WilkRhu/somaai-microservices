@@ -53,6 +53,9 @@ export class InventoryItem {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'json', nullable: true })
+  images: string[];
+
   @CreateDateColumn()
   createdAt: Date;
 

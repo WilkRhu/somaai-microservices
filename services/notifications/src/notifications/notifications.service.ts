@@ -61,6 +61,29 @@ export class NotificationsService {
     return notification;
   }
 
+  async sendSystemNotification(dto: SendNotificationDto): Promise<Notification> {
+    // Send notification without checking preferences (for system events)
+    const notification = this.notificationRepository.create({
+      id: uuidv4(),
+      userId: dto.userId,
+      type: dto.type,
+      title: dto.title,
+      message: dto.message,
+      recipient: dto.recipient,
+      metadata: dto.metadata,
+      status: NotificationStatus.PENDING,
+    });
+
+    await this.notificationRepository.save(notification);
+
+    // Send asynchronously
+    this.sendAsync(notification, dto.recipient).catch((error) => {
+      this.logger.error(`Failed to send notification ${notification.id}:`, error);
+    });
+
+    return notification;
+  }
+
   async sendBulkNotifications(dto: SendBulkNotificationDto): Promise<Notification[]> {
     const notifications: Notification[] = [];
 

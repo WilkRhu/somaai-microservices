@@ -6,23 +6,65 @@ import { firstValueFrom } from 'rxjs';
 export class BusinessService {
   private readonly logger = new Logger(BusinessService.name);
   private businessServiceUrl = process.env.BUSINESS_SERVICE_URL || 'http://localhost:3011';
+  private uploadServiceUrl = process.env.UPLOAD_SERVICE_URL || 'http://localhost:3008';
+  private offersServiceUrl = process.env.OFFERS_SERVICE_URL || 'http://localhost:3014';
 
   constructor(private httpService: HttpService) {}
+
+  async uploadInventoryImages(itemId: string, files: any[], authHeader?: string) {
+    const FormData = require('form-data');
+    const urls: string[] = [];
+
+    for (const file of files) {
+      try {
+        const form = new FormData();
+        form.append('file', file.buffer, { filename: file.originalname, contentType: file.mimetype });
+        form.append('folder', 'inventory');
+        const response = await firstValueFrom(
+          this.httpService.post(`${this.uploadServiceUrl}/upload`, form, { headers: form.getHeaders() }),
+        );
+        urls.push(response.data.url);
+      } catch (err) {
+        this.logger.error(`Failed to upload image: ${err.message}`);
+      }
+    }
+
+    return this.proxyRequest('POST', `/api/inventory/${itemId}/images`, { images: urls }, authHeader);
+  }
 
   async proxyRequest(method: string, path: string, data?: any, authHeader?: string) {
     const url = `${this.businessServiceUrl}${path}`;
 
+    this.logger.log(`🔗 [PROXY REQUEST] ${method} ${url}`);
+    this.logger.log(`🔗 [PROXY REQUEST] Authorization header: ${authHeader ? authHeader.substring(0, 30) + '...' : 'MISSING'}`);
+    if (data) {
+      this.logger.log(`🔗 [PROXY REQUEST] Body:`, JSON.stringify(data, null, 2));
+    }
+
     try {
       const headers: any = { 'Content-Type': 'application/json' };
-      if (authHeader) headers['Authorization'] = authHeader;
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+        this.logger.log(`🔗 [PROXY REQUEST] Adding Authorization header to request`);
+      } else {
+        this.logger.warn(`⚠️ [PROXY REQUEST] No authorization header provided`);
+      }
+
+      this.logger.log(`🔗 [PROXY REQUEST] Final headers:`, JSON.stringify(headers, null, 2));
 
       const response = await firstValueFrom(
         this.httpService.request({ method: method.toLowerCase(), url, data, headers }),
       );
 
+      this.logger.log(`✅ [PROXY REQUEST] Success: ${method} ${url}`);
       return response.data;
     } catch (error) {
-      this.logger.error(`Business proxy failed: ${method} ${url} - ${error.message}`);
+      this.logger.error(`❌ [PROXY REQUEST] Failed: ${method} ${url}`);
+      this.logger.error(`❌ [PROXY REQUEST] Error message: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`❌ [PROXY REQUEST] Response status: ${error.response.status}`);
+        this.logger.error(`❌ [PROXY REQUEST] Response data:`, JSON.stringify(error.response.data, null, 2));
+      }
 
       if (error.response) {
         throw new HttpException(
@@ -184,6 +226,18 @@ export class BusinessService {
     return this.proxyRequest('GET', `/api/establishments/${establishmentId}/inventory/alerts/low-stock`, undefined, authHeader);
   }
 
+  async getEstablishmentInventory(establishmentId: string, params: { search?: string; category?: string; sortBy?: string; sortOrder?: string; page?: number; limit?: number }, authHeader?: string) {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.category) query.append('category', params.category);
+    if (params.sortBy) query.append('sortBy', params.sortBy);
+    if (params.sortOrder) query.append('sortOrder', params.sortOrder);
+    if (params.page) query.append('page', String(params.page));
+    if (params.limit) query.append('limit', String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return this.proxyRequest('GET', `/api/establishments/${establishmentId}/inventory${qs}`, undefined, authHeader);
+  }
+
   // MercadoPago
   async mercadopagoConnect(data: any, authHeader?: string) {
     return this.proxyRequest('POST', '/api/establishments/mercadopago/connect', data, authHeader);
@@ -228,22 +282,60 @@ export class BusinessService {
 
   // Offers
   async createOffer(data: any, authHeader?: string) {
-    return this.proxyRequest('POST', '/api/offers', data, authHeader);
+    return this.proxyOfferRequest('POST', '/api/offers', data, authHeader);
   }
 
   async listOffers(skip?: number, take?: number, authHeader?: string) {
-    return this.proxyRequest('GET', `/api/offers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
+    return this.proxyOfferRequest('GET', `/api/offers?skip=${skip || 0}&take=${take || 20}`, undefined, authHeader);
   }
 
   async getOffer(id: string, authHeader?: string) {
-    return this.proxyRequest('GET', `/api/offers/${id}`, undefined, authHeader);
+    return this.proxyOfferRequest('GET', `/api/offers/${id}`, undefined, authHeader);
   }
 
   async updateOffer(id: string, data: any, authHeader?: string) {
-    return this.proxyRequest('PUT', `/api/offers/${id}`, data, authHeader);
+    return this.proxyOfferRequest('PUT', `/api/offers/${id}`, data, authHeader);
   }
 
   async deleteOffer(id: string, authHeader?: string) {
-    return this.proxyRequest('DELETE', `/api/offers/${id}`, undefined, authHeader);
+    return this.proxyOfferRequest('DELETE', `/api/offers/${id}`, undefined, authHeader);
+  }
+
+  async proxyOfferRequest(method: string, path: string, data?: any, authHeader?: string) {
+    const url = `${this.offersServiceUrl}${path}`;
+
+    this.logger.log(`🔗 [PROXY OFFER REQUEST] ${method} ${url}`);
+
+    try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
+      const response = await firstValueFrom(
+        this.httpService.request({ method: method.toLowerCase(), url, data, headers }),
+      );
+
+      this.logger.log(`✅ [PROXY OFFER REQUEST] Success: ${method} ${url}`);
+      return response.data;
+    } catch (error) {
+      this.logger.error(`❌ [PROXY OFFER REQUEST] Failed: ${method} ${url}`);
+      this.logger.error(`❌ [PROXY OFFER REQUEST] Error message: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`❌ [PROXY OFFER REQUEST] Response status: ${error.response.status}`);
+        this.logger.error(`❌ [PROXY OFFER REQUEST] Response data:`, JSON.stringify(error.response.data, null, 2));
+      }
+
+      if (error.response) {
+        throw new HttpException(
+          error.response.data || error.message,
+          error.response.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      } else if (error.request) {
+        throw new HttpException('Offers service not responding', HttpStatus.SERVICE_UNAVAILABLE);
+      } else {
+        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    }
   }
 }

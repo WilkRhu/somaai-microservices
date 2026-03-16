@@ -11,7 +11,7 @@ import { Sale } from './sale.entity';
 
 @Entity('sale_items')
 @Index('idx_saleItems_saleId', ['saleId'])
-@Index('idx_saleItems_inventoryItemId', ['inventoryItemId'])
+@Index('idx_saleItems_itemId', ['itemId'])
 export class SaleItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,8 +19,8 @@ export class SaleItem {
   @Column('varchar', { length: 36 })
   saleId: string;
 
-  @Column('varchar', { length: 36 })
-  inventoryItemId: string;
+  @Column('varchar', { length: 36, nullable: true })
+  itemId: string;
 
   @Column('int')
   quantity: number;

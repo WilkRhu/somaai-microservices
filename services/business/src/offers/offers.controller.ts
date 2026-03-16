@@ -24,6 +24,22 @@ export class OffersController {
     return await this.offersService.findAllOffers(establishmentId);
   }
 
+  @Get('establishment/:establishmentId')
+  async findByEstablishment(
+    @Param('establishmentId') establishmentId: string,
+    @Query('isActive') isActive?: string,
+  ) {
+    return await this.offersService.findAllOffers(establishmentId, isActive !== undefined ? isActive === 'true' : undefined);
+  }
+
+  @Get('establishment/:establishmentId/active-offer/:offerId')
+  async findActiveOffer(
+    @Param('establishmentId') establishmentId: string,
+    @Param('offerId') offerId: string,
+  ) {
+    return await this.offersService.findActiveOffer(establishmentId, offerId);
+  }
+
   @Get(':id')
   async findOneOffer(@Param('id') id: string) {
     return await this.offersService.findOneOffer(id);

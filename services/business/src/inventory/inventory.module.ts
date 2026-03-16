@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
 import { InventoryItem } from './entities/inventory-item.entity';
 import { StockMovement } from './entities/stock-movement.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([InventoryItem, StockMovement])],
+  imports: [TypeOrmModule.forFeature([InventoryItem, StockMovement]), HttpModule],
   controllers: [InventoryController],
   providers: [InventoryService],
   exports: [InventoryService],

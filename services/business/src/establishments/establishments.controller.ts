@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { EstablishmentsService } from './establishments.service';
 import { CustomersService } from '../customers/customers.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { SalesService } from '../sales/sales.service';
 import { AuthGuard } from '../common/guards/auth.guard';
 
 @ApiTags('Establishments')
@@ -13,6 +14,7 @@ export class EstablishmentsController {
     private readonly establishmentsService: EstablishmentsService,
     private readonly customersService: CustomersService,
     private readonly inventoryService: InventoryService,
+    private readonly salesService: SalesService,
   ) {}
 
   @Post()
@@ -31,6 +33,12 @@ export class EstablishmentsController {
   @Get()
   @ApiOperation({ summary: 'List establishments' })
   async findAll() {
+    return this.establishmentsService.findAll();
+  }
+
+  @Get('all')
+  @ApiOperation({ summary: 'List all establishments (no pagination)' })
+  async findAllNoPagination() {
     return this.establishmentsService.findAll();
   }
 
@@ -134,12 +142,37 @@ export class EstablishmentsController {
     @Query('category') category?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'ASC' | 'DESC',
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
     return this.inventoryService.findByEstablishment(id, {
       search,
       category,
       sortBy,
       sortOrder,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+    });
+  }
+
+  @Get(':id/customers')
+  @ApiOperation({ summary: 'Get customers for establishment' })
+  async getCustomers(@Param('id') id: string) {
+    return this.customersService.findByEstablishment(id);
+  }
+
+  @Get(':id/sales')
+  @ApiOperation({ summary: 'Get sales for establishment with filters' })
+  async getSales(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+  ) {
+    return this.salesService.findByEstablishment(id, {
+      limit: limit ? Number(limit) : 20,
+      status,
+      page: page ? Number(page) : 1,
     });
   }
 }

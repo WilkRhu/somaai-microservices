@@ -1,6 +1,6 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('users')
+@Entity('user_business')
 export class User {
   @PrimaryColumn({ type: 'varchar', length: 36 })
   id: string; // auth service user id (JWT sub)

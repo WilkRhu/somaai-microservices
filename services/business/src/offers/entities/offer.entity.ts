@@ -6,11 +6,10 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { DiscountType } from '../enums/discount-type.enum';
 
 @Entity('offers')
 @Index('idx_offers_establishment_active', ['establishmentId', 'isActive'])
-@Index('idx_offers_inventoryItemId', ['inventoryItemId'])
+@Index('idx_offers_itemId', ['itemId'])
 export class Offer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -18,29 +17,29 @@ export class Offer {
   @Column('varchar', { length: 36 })
   establishmentId: string;
 
-  @Column('varchar', { length: 36 })
-  inventoryItemId: string;
+  @Column('varchar', { length: 36, nullable: true })
+  itemId: string;
 
-  @Column('varchar', { length: 255 })
+  @Column('varchar', { length: 255, nullable: true })
   title: string;
 
   @Column('text', { nullable: true })
   description: string;
 
-  @Column({
-    type: 'enum',
-    enum: DiscountType,
-  })
-  discountType: DiscountType;
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  offerPrice: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  discountValue: number;
-
-  @Column('date')
+  @Column('date', { nullable: true })
   startDate: Date;
 
-  @Column('date')
+  @Column('date', { nullable: true })
   endDate: Date;
+
+  @Column('boolean', { default: false })
+  whileStockLasts: boolean;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  radiusKm: number;
 
   @Column('boolean', { default: true })
   isActive: boolean;

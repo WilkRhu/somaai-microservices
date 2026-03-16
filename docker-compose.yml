@@ -140,7 +140,7 @@ services:
       DB_PORT: 3306
       DB_USERNAME: somaai
       DB_PASSWORD: somaai_password
-      DB_DATABASE: somaai_business
+      DB_DATABASE: somaai_master
       DB_LOGGING: "false"
       KAFKA_BROKERS: kafka:9092
       KAFKA_CLIENT_ID: business-service

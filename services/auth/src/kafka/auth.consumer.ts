@@ -15,16 +15,10 @@ export class AuthConsumerService implements OnModuleInit {
     try {
       this.logger.log('Starting Kafka topic subscriptions...');
       
-      // O auth service pode escutar eventos relacionados a usuários
-      await this.kafkaService.subscribeToTopic('user.created', this.handleUserCreated.bind(this));
-      await this.kafkaService.subscribeToTopic('user.updated', this.handleUserUpdated.bind(this));
-      await this.kafkaService.subscribeToTopic('user.deleted', this.handleUserDeleted.bind(this));
-      await this.kafkaService.subscribeToTopic('auth.token.revoked', this.handleTokenRevoked.bind(this));
+      // Auth service não precisa consumir tópicos - apenas publica eventos
+      // O business service consome os eventos do auth
       
-      // Também pode escutar eventos de ordem para sincronização
-      await this.kafkaService.subscribeToTopic('order.created', this.handleOrderCreated.bind(this));
-      
-      this.logger.log('Kafka topic subscriptions completed successfully');
+      this.logger.log('Kafka topic subscriptions skipped (auth only publishes events)');
     } catch (error) {
       this.logger.error(`Failed to subscribe to Kafka topics: ${error.message}`);
       // Não lançar erro para não quebrar a inicialização do serviço

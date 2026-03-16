@@ -15,14 +15,22 @@ export class NotificationConsumer implements OnModuleInit {
   async onModuleInit() {
     try {
       // Subscribe to all topics first, then start consumer
-      const topics = ['notification.send', 'auth.registration.success', 'order.created', 'user.created'];
+      const topics = ['notification.send', 'notification.email.send', 'auth.registration.success', 'order.created', 'user.created'];
+      
+      this.logger.log(`🔗 Subscribing to ${topics.length} topics...`);
       
       // Subscribe to all topics
       await this.kafkaService.subscribeToTopic(
         'notification.send',
         this.handleNotificationSend.bind(this),
       );
-      this.logger.log('Registered consumer for notification.send topic');
+      this.logger.log('✅ Registered consumer for notification.send topic');
+
+      await this.kafkaService.subscribeToTopic(
+        'notification.email.send',
+        this.handleEmailSend.bind(this),
+      );
+      this.logger.log('✅ Registered consumer for notification.email.send topic');
 
       // Subscribe to other topics with error handling
       try {
@@ -30,9 +38,9 @@ export class NotificationConsumer implements OnModuleInit {
           'auth.registration.success',
           this.handleRegistrationSuccess.bind(this),
         );
-        this.logger.log('Registered consumer for auth.registration.success topic');
+        this.logger.log('✅ Registered consumer for auth.registration.success topic');
       } catch (error) {
-        this.logger.warn(`Could not subscribe to auth.registration.success: ${error instanceof Error ? error.message : String(error)}`);
+        this.logger.warn(`⚠️ Could not subscribe to auth.registration.success: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       try {
@@ -40,9 +48,9 @@ export class NotificationConsumer implements OnModuleInit {
           'order.created',
           this.handleOrderCreated.bind(this),
         );
-        this.logger.log('Registered consumer for order.created topic');
+        this.logger.log('✅ Registered consumer for order.created topic');
       } catch (error) {
-        this.logger.warn(`Could not subscribe to order.created: ${error instanceof Error ? error.message : String(error)}`);
+        this.logger.warn(`⚠️ Could not subscribe to order.created: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       try {
@@ -50,13 +58,15 @@ export class NotificationConsumer implements OnModuleInit {
           'user.created',
           this.handleUserCreated.bind(this),
         );
-        this.logger.log('Registered consumer for user.created topic');
+        this.logger.log('✅ Registered consumer for user.created topic');
       } catch (error) {
-        this.logger.warn(`Could not subscribe to user.created: ${error instanceof Error ? error.message : String(error)}`);
+        this.logger.warn(`⚠️ Could not subscribe to user.created: ${error instanceof Error ? error.message : String(error)}`);
       }
+      
+      this.logger.log('✅ All Kafka consumers registered successfully');
     } catch (error) {
       this.logger.error(
-        `Failed to register Kafka consumers: ${error instanceof Error ? error.message : String(error)}`,
+        `❌ Failed to register Kafka consumers: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -76,6 +86,36 @@ export class NotificationConsumer implements OnModuleInit {
       });
     } catch (error) {
       this.logger.error(`Error handling notification.send:`, error);
+    }
+  }
+
+  private async handleEmailSend(message: any) {
+    try {
+      const { userId, to, subject, template, data } = message;
+      this.logger.log(`📧 [EMAIL.SEND] Processing notification.email.send event: to=${to} template=${template}`);
+
+      // Build email body based on template
+      let emailBody = '';
+      if (template === 'welcome') {
+        const { firstName, lastName } = data;
+        emailBody = `<h1>Bem-vindo ao SomaAI, ${firstName}!</h1><p>Sua conta foi criada com sucesso. Estamos felizes em tê-lo conosco.</p>`;
+      } else {
+        emailBody = `<p>${subject}</p>`;
+      }
+
+      // Send email as system notification (without checking preferences)
+      await this.notificationsService.sendSystemNotification({
+        userId: userId || 'system',
+        type: NotificationType.EMAIL,
+        title: subject,
+        message: emailBody,
+        recipient: to,
+        metadata: { template, data },
+      });
+      
+      this.logger.log(`✅ Email sent successfully to ${to}`);
+    } catch (error) {
+      this.logger.error(`❌ Error handling notification.email.send:`, error);
     }
   }
 

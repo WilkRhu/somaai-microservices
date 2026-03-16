@@ -182,6 +182,8 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     await this.publishEvent('user.created', {
       id: user.id,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       name: user.name,
       role: user.role,
       createdAt: user.createdAt || new Date().toISOString(),
