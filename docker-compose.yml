@@ -255,29 +255,6 @@ services:
       - somaai-network
     restart: unless-stopped
 
-  offers:
-    build:
-      context: ./services/offers
-      dockerfile: Dockerfile
-    container_name: offers-service
-    ports:
-      - "3014:3014"
-    environment:
-      NODE_ENV: production
-      PORT: 3005
-      DATABASE_URL: mysql://somaai:somaai_password@mysql-master:3306/somaai_master
-      REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: redpanda:29092
-    depends_on:
-      mysql-master:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      redpanda:
-        condition: service_healthy
-    networks:
-      - somaai-network
-    restart: unless-stopped
 
   fiscal:
     build:
